@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 contract AutoRefi {
 
   address public owner;
-  // address[] public userAddresses;
+  address[] public userAddresses;
   mapping(address => User) loanData;
 
   struct User {
@@ -21,9 +21,18 @@ contract AutoRefi {
   }
 
   constructor(uint256 loan) {
-    loanData[msg.sender].owner = msg.sender;
-    loanData[msg.sender].loan = loan;
+    createUser(msg.sender, loan);
     owner = msg.sender;
+  }
+
+  function createUser(address _owner, uint256 _loan) internal {
+    loanData[msg.sender].owner = _owner;
+    loanData[msg.sender].loan = _loan;
+    userAddresses.push(msg.sender);
+  }
+
+  function getAllUsers() external view returns (address[] memory) {
+    return userAddresses;
   }
 
   function getCurrentLoanData() internal returns (uint256) {
