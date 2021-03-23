@@ -21,7 +21,7 @@ contract AutoRefi {
   }
 
   constructor(uint256 loan) {
-    _createUser(msg.sender, loan);
+    //_createUser(msg.sender, loan);
     owner = msg.sender;
   }
 
@@ -43,7 +43,7 @@ contract AutoRefi {
 
   }
 
-  function optToggle() public onlyOwner returns (bool) {
+  function optToggle() public returns (bool) {
 
   }
 
