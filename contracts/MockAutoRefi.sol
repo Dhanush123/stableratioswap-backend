@@ -21,11 +21,11 @@ contract AutoRefi {
   }
 
   constructor(uint256 loan) {
-    createUser(msg.sender, loan);
+    _createUser(msg.sender, loan);
     owner = msg.sender;
   }
 
-  function createUser(address _owner, uint256 _loan) internal {
+  function _createUser(address _owner, uint256 _loan) internal {
     loanData[msg.sender].owner = _owner;
     loanData[msg.sender].loan = _loan;
     userAddresses.push(msg.sender);
@@ -35,11 +35,11 @@ contract AutoRefi {
     return userAddresses;
   }
 
-  function getCurrentLoanData() internal returns (uint256) {
+  function _getCurrentLoanData() internal returns (uint256) {
 
   }
 
-  function getLowestRateLoan() internal returns (uint256) {
+  function _getLowestRateLoan() internal returns (uint256) {
 
   }
 
