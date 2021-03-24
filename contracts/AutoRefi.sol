@@ -12,6 +12,7 @@ contract AutoRefi {
   struct User {
     address owner;
     uint256 loan;
+    bool flag;
   }
 
   modifier onlyOwner {
@@ -20,7 +21,7 @@ contract AutoRefi {
     }
   }
 
-  constructor(uint256 loan) {
+  constructor() {
     //_createUser(msg.sender, loan);
     owner = msg.sender;
   }
@@ -28,6 +29,7 @@ contract AutoRefi {
   function _createUser(address _owner, uint256 _loan) internal {
     loanData[msg.sender].owner = _owner;
     loanData[msg.sender].loan = _loan;
+    loanData[msg.sender].flag = false;
     userAddresses.push(msg.sender);
   }
 
@@ -43,7 +45,8 @@ contract AutoRefi {
 
   }
 
-  function optToggle() public returns (bool) {
+  function optToggle() public {
+    loanData[msg.sender].flag = !loanData[msg.sender].flag;
 
   }
 
