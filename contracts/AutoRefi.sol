@@ -3,8 +3,17 @@ pragma solidity ^0.7.0;
 
 import "hardhat/console.sol";
 
-contract User {
-  address owner;
+contract AutoRefi {
+
+  address public owner;
+  address[] public userAddresses;
+  mapping(address => User) loanData;
+
+  struct User {
+    address owner;
+    uint256 loan;
+    bool flag;
+  }
 
   modifier onlyOwner {
     if (msg.sender == owner) {
@@ -13,18 +22,31 @@ contract User {
   }
 
   constructor() {
+    //_createUser(msg.sender, loan);
     owner = msg.sender;
   }
 
-  function getCurrentLoanData() internal returns (uint) {
+  function _createUser(address _owner, uint256 _loan) internal {
+    loanData[msg.sender].owner = _owner;
+    loanData[msg.sender].loan = _loan;
+    loanData[msg.sender].flag = false;
+    userAddresses.push(msg.sender);
+  }
+
+  function getAllUsers() external view returns (address[] memory) {
+    return userAddresses;
+  }
+
+  function _getCurrentLoanData() internal returns (uint256) {
 
   }
 
-  function getLowestRateLoan() internal returns (uint) {
+  function _getLowestRateLoan() internal returns (uint256) {
 
   }
 
-  function optToggle() public onlyOwner returns (bool) {
+  function optToggle() public {
+    loanData[msg.sender].flag = !loanData[msg.sender].flag;
 
   }
 
