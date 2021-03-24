@@ -41,8 +41,8 @@ contract StableRatioSwap {
 
   }
 
-  function _getCurrentDepositData() internal {
-
+  function _getCurrentDepositData() internal view returns (uint256) {
+    return userData[msg.sender].deposit;
   }
 
   function _getHighestAPYStablecoinAlt() internal {
