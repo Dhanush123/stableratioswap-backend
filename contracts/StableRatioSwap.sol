@@ -7,11 +7,11 @@ contract StableRatioSwap {
 
   address public owner;
   address[] public userAddresses;
-  mapping(address => User) loanData;
+  mapping(address => User) userData;
 
   struct User {
     address owner;
-    uint256 loan;
+    uint256 deposit;
     bool flag;
   }
 
@@ -22,14 +22,14 @@ contract StableRatioSwap {
   }
 
   constructor() {
-    //_createUser(msg.sender, loan);
+    //_createUser(msg.sender, _deposit);
     owner = msg.sender;
   }
 
-  function _createUser(address _owner, uint256 _loan) internal {
-    loanData[msg.sender].owner = _owner;
-    loanData[msg.sender].loan = _loan;
-    loanData[msg.sender].flag = false;
+  function _createUser(address _owner, uint256 _deposit) internal {
+    userData[msg.sender].owner = _owner;
+    userData[msg.sender].deposit = _deposit;
+    userData[msg.sender].flag = false;
     userAddresses.push(msg.sender);
   }
 
@@ -37,20 +37,23 @@ contract StableRatioSwap {
     return userAddresses;
   }
 
-  function _getCurrentLoanData() internal returns (uint256) {
+  function getAllStablecoinDeposits() public {
 
   }
 
-  function _getLowestRateLoan() internal returns (uint256) {
+  function _getCurrentDepositData() internal {
+
+  }
+
+  function _getHighestAPYStablecoinAlt() internal {
 
   }
 
   function optToggle() public {
-    loanData[msg.sender].flag = !loanData[msg.sender].flag;
-
+    userData[msg.sender].flag = !userData[msg.sender].flag;
   }
 
-  function refinance() public onlyOwner returns (bool) {
+  function swapStablecoinDeposit() internal onlyOwner {
 
   }
 
