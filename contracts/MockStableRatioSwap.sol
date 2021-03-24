@@ -25,7 +25,7 @@ contract MockStableRatioSwap {
     owner = msg.sender;
   }
 
-  function _createUser(address _owner, uint256 _deposit) internal {
+  function createUser(address _owner, uint256 _deposit) public {
     userData[msg.sender].owner = _owner;
     userData[msg.sender].deposit = _deposit;
     userData[msg.sender].flag = false;
