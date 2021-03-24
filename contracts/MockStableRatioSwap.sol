@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
-contract AutoRefi {
+contract MockStableRatioSwap {
 
   address public owner;
   address[] public userAddresses;
@@ -12,7 +12,6 @@ contract AutoRefi {
   struct User {
     address owner;
     uint256 loan;
-    bool flag;
   }
 
   modifier onlyOwner {
@@ -21,7 +20,7 @@ contract AutoRefi {
     }
   }
 
-  constructor() {
+  constructor(uint256 loan) {
     //_createUser(msg.sender, loan);
     owner = msg.sender;
   }
@@ -29,7 +28,6 @@ contract AutoRefi {
   function _createUser(address _owner, uint256 _loan) internal {
     loanData[msg.sender].owner = _owner;
     loanData[msg.sender].loan = _loan;
-    loanData[msg.sender].flag = false;
     userAddresses.push(msg.sender);
   }
 
@@ -45,8 +43,7 @@ contract AutoRefi {
 
   }
 
-  function optToggle() public {
-    loanData[msg.sender].flag = !loanData[msg.sender].flag;
+  function optToggle() public returns (bool) {
 
   }
 
