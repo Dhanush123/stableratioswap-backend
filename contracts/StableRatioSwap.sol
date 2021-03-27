@@ -1,7 +1,9 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
 import "hardhat/console.sol";
+import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
 
 contract StableRatioSwap {
 
@@ -22,15 +24,20 @@ contract StableRatioSwap {
   }
 
   constructor() {
-    //_createUser(msg.sender, _deposit);
+    // createUser(msg.sender, _deposit);
     owner = msg.sender;
   }
 
-  function createUser(address _owner, uint256 _deposit) public {
-    userData[msg.sender].owner = _owner;
-    userData[msg.sender].deposit = _deposit;
+  function deposit(address pool, address token, address user, uint256 amount) {
+    ILendingPool(pool).deposit(token, amount, user, '0');
+  }
+
+  function createUser(address pool, address token, address owner, uint256 amount) public {
+    userData[msg.sender].owner = owner;
+    userData[msg.sender].deposit = _amount;
     userData[msg.sender].flag = false;
     userAddresses.push(msg.sender);
+    deposit(pool, token, _owner, amount);
   }
 
   function getAllUsers() external view returns (address[] memory) {
