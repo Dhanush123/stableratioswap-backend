@@ -21,7 +21,7 @@ contract MockStableRatioSwap {
     }
   }
 
-  constructor() {
+  constructor() public {
     owner = msg.sender;
   }
 

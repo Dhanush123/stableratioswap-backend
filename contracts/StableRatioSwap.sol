@@ -24,18 +24,18 @@ contract StableRatioSwap {
     }
   }
 
-  constructor() {
+  constructor() public {
     // createUser(msg.sender, _deposit);
     owner = msg.sender;
   }
 
-  function deposit(address pool, address token, address user, uint256 amount) {
-    ILendingPool(pool).deposit(token, amount, user, '0');
+  function deposit(address pool, address token, address user, uint256 amount) public {
+    ILendingPool(pool).deposit(token, amount, user, 0);
   }
 
-  function createUser(address pool, address token, address owner, uint256 amount) public {
-    userData[msg.sender].owner = owner;
-    userData[msg.sender].deposit = _amount;
+  function createUser(address pool, address token, address _owner, uint256 amount) public {
+    userData[msg.sender].owner = _owner;
+    userData[msg.sender].deposit = amount;
     userData[msg.sender].flag = false;
     userAddresses.push(msg.sender);
     deposit(pool, token, _owner, amount);
