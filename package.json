@@ -14,11 +14,12 @@
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.0.32",
-    "hardhat": "^2.1.1"
+    "hardhat": "^2.1.2"
   },
   "dependencies": {
     "@aave/protocol-js": "^2.6.0",
     "@aave/protocol-v2": "^1.0.1",
-    "npm": "^7.6.3"
+    "npm": "^7.6.3",
+    "solc": "^0.8.3"
   }
 }
