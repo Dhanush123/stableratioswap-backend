@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+pragma solidity >=0.6.12;
 
 import "hardhat/console.sol";
 
@@ -7,11 +7,12 @@ contract MockStableRatioSwap {
 
   address public owner;
   address[] public userAddresses;
-  mapping(address => User) loanData;
+  mapping(address => User) userData;
 
   struct User {
     address owner;
-    uint256 loan;
+    uint256 deposit;
+    bool flag;
   }
 
   modifier onlyOwner {
@@ -20,14 +21,14 @@ contract MockStableRatioSwap {
     }
   }
 
-  constructor(uint256 loan) {
-    //_createUser(msg.sender, loan);
+  constructor() public {
     owner = msg.sender;
   }
 
-  function _createUser(address _owner, uint256 _loan) internal {
-    loanData[msg.sender].owner = _owner;
-    loanData[msg.sender].loan = _loan;
+  function createUser(address _owner, uint256 _deposit) public {
+    userData[msg.sender].owner = _owner;
+    userData[msg.sender].deposit = _deposit;
+    userData[msg.sender].flag = false;
     userAddresses.push(msg.sender);
   }
 
@@ -35,19 +36,23 @@ contract MockStableRatioSwap {
     return userAddresses;
   }
 
-  function _getCurrentLoanData() internal returns (uint256) {
+  function getAllStablecoinDeposits() public {
 
   }
 
-  function _getLowestRateLoan() internal returns (uint256) {
+  function _getCurrentDepositData() internal {
 
   }
 
-  function optToggle() public returns (bool) {
+  function _getHighestAPYStablecoinAlt() internal {
 
   }
 
-  function refinance() public onlyOwner returns (bool) {
+  function optToggle() public {
+    
+  }
+
+  function swapStablecoinDeposit() internal onlyOwner {
 
   }
 

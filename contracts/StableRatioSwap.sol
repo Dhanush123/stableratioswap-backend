@@ -1,17 +1,20 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+pragma solidity >=0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "hardhat/console.sol";
+import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
+import {ILendingPoolAddressesProvider} from '@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol';
 
 contract StableRatioSwap {
 
   address public owner;
   address[] public userAddresses;
-  mapping(address => User) loanData;
+  mapping(address => User) userData;
 
   struct User {
     address owner;
-    uint256 loan;
+    uint256 deposit;
     bool flag;
   }
 
@@ -21,36 +24,44 @@ contract StableRatioSwap {
     }
   }
 
-  constructor() {
-    //_createUser(msg.sender, loan);
+  constructor() public {
+    // createUser(msg.sender, _deposit);
     owner = msg.sender;
   }
 
-  function _createUser(address _owner, uint256 _loan) internal {
-    loanData[msg.sender].owner = _owner;
-    loanData[msg.sender].loan = _loan;
-    loanData[msg.sender].flag = false;
+  function deposit(address pool, address token, address user, uint256 amount) public {
+    ILendingPool(pool).deposit(token, amount, user, 0);
+  }
+
+  function createUser(address pool, address token, address _owner, uint256 amount) public {
+    userData[msg.sender].owner = _owner;
+    userData[msg.sender].deposit = amount;
+    userData[msg.sender].flag = false;
     userAddresses.push(msg.sender);
+    deposit(pool, token, _owner, amount);
   }
 
   function getAllUsers() external view returns (address[] memory) {
     return userAddresses;
   }
 
-  function _getCurrentLoanData() internal returns (uint256) {
+  function getAllStablecoinDeposits() public {
 
   }
 
-  function _getLowestRateLoan() internal returns (uint256) {
+  function _getCurrentDepositData() internal view returns (uint256) {
+    return userData[msg.sender].deposit;
+  }
+
+  function _getHighestAPYStablecoinAlt() internal {
 
   }
 
   function optToggle() public {
-    loanData[msg.sender].flag = !loanData[msg.sender].flag;
-
+    userData[msg.sender].flag = !userData[msg.sender].flag;
   }
 
-  function refinance() public onlyOwner returns (bool) {
+  function swapStablecoinDeposit() internal onlyOwner {
 
   }
 
