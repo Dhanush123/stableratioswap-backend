@@ -2,11 +2,35 @@
 
 other related repos https://github.com/Dhanush123/stableratioswap-frontend https://github.com/Dhanush123/tusd-ratio-adapter https://github.com/Dhanush123/tusd-ratio-jobspec
 
-## Installation
-To install it, you need to create an npm project by going to an empty folder, running `npm init`, and following its instructions. Once the project is ready, you should run
+## Quick start
 
-`npm install --save-dev hardhat`
+The first things you need to do are cloning this repository and installing its
+dependencies:
 
-To create a Hardhat project run `npx hardhat` in the project folder:
+```sh
+git clone https://github.com/Dhanush123/stableratioswap-backend.git
+cd stableratioswap-backend
+npm install
+```
 
-`npm install @aave/protocol-v2`
+Once installed, let's run Hardhat's testing network:
+
+```sh
+npx hardhat node
+```
+
+Then, on a new terminal, go to the repository's root folder and run this to
+deploy your contract:
+
+```sh
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+Finally, we can clone and run the frontend with:
+
+```sh
+git clone https://github.com/Dhanush123/stableratioswap-frontend.git
+cd stableratioswap-frontend
+npm install
+npm start
+```
