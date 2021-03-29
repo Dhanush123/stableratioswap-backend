@@ -30,7 +30,8 @@ contract StableRatioSwap {
     owner = msg.sender;
   }
 
-  function deposit(address pool, address token, address user, uint256 amount) public {
+  function deposit(address user, uint256 amount) public {
+    //address pool, address token, <-- "hardcode" these on contract side as discussed
     ILendingPool(pool).deposit(token, amount, user, 0);
   }
 
