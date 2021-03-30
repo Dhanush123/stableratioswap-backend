@@ -14,7 +14,7 @@ contract StableRatioSwap {
   mapping(address => User) userData;
 
   struct User {
-    address owner;
+    address userAddress;
     uint256 deposit;
     bool flag;
   }
@@ -30,17 +30,21 @@ contract StableRatioSwap {
     owner = msg.sender;
   }
 
-  function deposit(address user, uint256 amount) public {
-    //address pool, address token, <-- "hardcode" these on contract side as discussed
-    ILendingPool(pool).deposit(token, amount, user, 0);
+  function deposit(address userAddress, uint256 amount) public {
+    //temporary addresses to make file compile, replace later @Hide
+    address pool = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
+    address token = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
+    ILendingPool(pool).deposit(token, amount, userAddress, 0);
   }
 
-  function createUser(address pool, address token, address _owner, uint256 amount) public {
-    userData[msg.sender].owner = _owner;
-    userData[msg.sender].deposit = amount;
-    userData[msg.sender].flag = false;
-    userAddresses.push(msg.sender);
-    deposit(pool, token, _owner, amount);
+  function createUser(address _userAddress, uint256 amount) public {
+    if (userData[msg.sender].userAddress != address(0)) {
+      userData[msg.sender].userAddress = _userAddress;
+      userData[msg.sender].deposit = amount;
+      userData[msg.sender].flag = false;
+      userAddresses.push(msg.sender);
+    }
+    deposit(_userAddress, amount);
   }
 
   function getAllUsers() external view returns (address[] memory) {
