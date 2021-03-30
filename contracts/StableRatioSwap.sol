@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 // HardHat Imports
 import "hardhat/console.sol";
+import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
 import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
 import {ILendingPoolAddressesProvider} from '@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol';
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
@@ -14,10 +15,10 @@ contract StableRatioSwap {
 
   using SafeMath for uint256;
 
-  // bytes32 JOB_ID = "534ea675a9524e8e834585b00368b178";    
-  // address private constant LINK_KOVAN = 0xa36085F69e2889c224210F603D836748e7dC0088; 
-  // address private constant ORACLE_CONTRACT = 0x05c8fadf1798437c143683e665800d58a42b6e19;
-  // address private constant NODE_ADDRESS = 0xDC92b2B1C731d07dC9bd8D30D0B1A69F266f2A8A;
+  // bytes32 JOB_ID = "";
+  // address private constant ORACLE = 0x;
+  // address private constant LINK_KOVAN = 0x; 
+  // address private constant NODE_ADDRESS = 0x;
 
   // These addresses are for Kovan
   address constant ILendingPoolAddressesProvider_Addr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
@@ -57,7 +58,6 @@ contract StableRatioSwap {
     AaveProtocolDataProvider.TokenData[] memory allTokenData = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getAllATokens();
     for (uint i = 0; i < allTokenData.length; i++) {
       AaveProtocolDataProvider.TokenData memory token = allTokenData[0];
-
       string memory tokenSym = token.symbol;
       address addr = token.tokenAddress;
       stableCoinAddresses[tokenSym] = addr;
@@ -128,6 +128,10 @@ contract StableRatioSwap {
   }
 
   function swapStablecoinDeposit() internal onlyOwner {
+
+  }
+
+  function getTUSDRatio() public {
 
   }
 
