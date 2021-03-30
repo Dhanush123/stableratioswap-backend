@@ -15,6 +15,7 @@ contract StableRatioSwap {
   address public owner;
   address[] public userAddresses;
   mapping(address => User) userData;
+  TokenData[] allTokenData = AaveProtocolDataProvider().getAllATokens();
 
   struct User {
     address userAddress;
@@ -23,30 +24,36 @@ contract StableRatioSwap {
   }
 
   modifier onlyOwner {
-    if (msg.sender == owner) {
-       _;
-    }
+    require (msg.sender == owner);
+    _;
   }
+
+  event Deposit(
+    uint256 tusd,
+    uint256 usdc,
+    uint256 usdt,
+    uint256 dai,
+    uint256 busd
+  );
 
   constructor() public {
     owner = msg.sender;
   }
 
   function deposit(address userAddress, uint256 amount) public {
-    //temporary addresses to make file compile, replace later @Hide
+    // temporary addresses to make file compile, replace later @Hide
     address pool = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
     address token = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
     // ILendingPool(pool).deposit(token, amount, userAddress, 0);
+    emit Deposit(1,2,3,4,5);
   }
 
   function createUser(address _userAddress, uint256 amount) public {
-    if (userData[msg.sender].userAddress != address(0)) {
-      userData[msg.sender].userAddress = _userAddress;
-      userData[msg.sender].deposit = amount;
-      userData[msg.sender].flag = false;
-      userAddresses.push(msg.sender);
-    }
-    deposit(_userAddress, amount);
+    require (userData[msg.sender].userAddress == address(0));
+    userData[msg.sender].userAddress = _userAddress;
+    userData[msg.sender].deposit = amount;
+    userData[msg.sender].flag = false;
+    userAddresses.push(msg.sender);
   }
 
   function getAllUsers() external view returns (address[] memory) {
@@ -58,6 +65,7 @@ contract StableRatioSwap {
   }
 
   function _getCurrentDepositData() internal view returns (uint256) {
+    AaveProtocolDataProvider().getUserReserveData(asset, msg.sender);
     return userData[msg.sender].deposit;
   }
 
