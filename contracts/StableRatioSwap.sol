@@ -44,7 +44,7 @@ contract StableRatioSwap {
       userData[msg.sender].flag = false;
       userAddresses.push(msg.sender);
     }
-    deposit(_userAddress, amount);
+    // deposit(_userAddress, amount);
   }
 
   function getAllUsers() external view returns (address[] memory) {
