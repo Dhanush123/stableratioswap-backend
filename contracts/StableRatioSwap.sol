@@ -145,7 +145,7 @@ contract StableRatioSwap is ChainlinkClient {
     sendChainlinkRequestTo(oracle, req, fee);
   }
 
-  function getTUSDRatio() public requestTUSDRatio(_requestID) {
+  function getTUSDRatio(bytes32 _requestID) public requestTUSDRatio(_requestID) {
 
   }
 
