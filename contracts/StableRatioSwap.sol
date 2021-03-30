@@ -17,6 +17,7 @@ contract StableRatioSwap is ChainlinkClient {
 
   bytes32 jobID = "35e14dbd490f4e3b9fbe92b85b32d98a";
   address private constant ORACLE = 0xFC153f49E74711C3140CA06bFAcf42FfDC492A17;
+  uint256 private fee = 0.01 * 1 ether;
   // address private constant LINK_KOVAN = 0xTo_Be_Filled; 
   // address private constant NODE_ADDRESS = 0xTo_Be_Filled;
 
@@ -138,7 +139,15 @@ contract StableRatioSwap is ChainlinkClient {
   }
 
   function getTUSDRatio() public {
-
+    Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfillEthereumPrice.selector);
+    req.add("function", "GLOBAL_QUOTE");
+    req.add("symbol", "TSLA");
+    string[] memory copyPath = new string[](2);
+    copyPath[0] = "Global Quote";
+    copyPath[1] = "05. price";
+    req.addStringArray("copyPath", copyPath);
+    req.addInt("times", 100000000);
+    sendChainlinkRequestTo(oracle, req, fee);
   }
 
 }
