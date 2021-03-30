@@ -141,11 +141,11 @@ contract StableRatioSwap is ChainlinkClient {
   }
 
   function requestTUSDRatio() public {
-    Chainlink.Request memory req = buildChainlinkRequest(jobID, address(this), this.fulfillEthereumPrice.selector);
+    Chainlink.Request memory req = buildChainlinkRequest(jobID, address(this), this.getTUSDRatio.selector);
     sendChainlinkRequestTo(oracle, req, fee);
   }
 
-  function getTUSDRatio(bytes32 _requestID) public requestTUSDRatio(_requestID) {
+  function getTUSDRatio(bytes32 _requestID) public recordChainlinkFulfillment(_requestID) {
 
   }
 
