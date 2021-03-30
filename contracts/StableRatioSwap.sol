@@ -37,7 +37,7 @@ contract StableRatioSwap {
     //temporary addresses to make file compile, replace later @Hide
     address pool = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
     address token = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
-    ILendingPool(pool).deposit(token, amount, userAddress, 0);
+    // ILendingPool(pool).deposit(token, amount, userAddress, 0);
   }
 
   function createUser(address _userAddress, uint256 amount) public {
