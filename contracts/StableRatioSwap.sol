@@ -29,7 +29,6 @@ contract StableRatioSwap {
   }
 
   constructor() public {
-    // createUser(msg.sender, _deposit);
     owner = msg.sender;
   }
 
@@ -47,7 +46,7 @@ contract StableRatioSwap {
       userData[msg.sender].flag = false;
       userAddresses.push(msg.sender);
     }
-    // deposit(_userAddress, amount);
+    deposit(_userAddress, amount);
   }
 
   function getAllUsers() external view returns (address[] memory) {
