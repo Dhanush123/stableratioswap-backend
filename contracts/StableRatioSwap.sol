@@ -7,6 +7,7 @@ import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.
 import {ILendingPoolAddressesProvider} from '@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol';
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract StableRatioSwap {
 
@@ -15,7 +16,11 @@ contract StableRatioSwap {
   address public owner;
   address[] public userAddresses;
   mapping(address => User) userData;
+  address pooladdr;
+  ILendingPool pool;
+
   TokenData[] allTokenData = AaveProtocolDataProvider().getAllATokens();
+  
 
   struct User {
     address userAddress;
@@ -24,7 +29,7 @@ contract StableRatioSwap {
   }
 
   modifier onlyOwner {
-    require (msg.sender == owner);
+    require(msg.sender == owner);
     _;
   }
 
@@ -38,18 +43,23 @@ contract StableRatioSwap {
 
   constructor() public {
     owner = msg.sender;
+    pooladdr = ILendingPoolAddressesProvider().getLendingPool();
+    pool = ILendingPool(pooladdr);
   }
 
   function deposit(address userAddress, uint256 amount) public {
+    // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
+    require(IERC20().approve(pool, amount));
+
     // temporary addresses to make file compile, replace later @Hide
-    address pool = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
+    // address pool = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
     address token = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
-    // ILendingPool(pool).deposit(token, amount, userAddress, 0);
+    // pool.deposit(token, amount, userAddress, 0);
     emit Deposit(1,2,3,4,5);
   }
 
   function createUser(address _userAddress, uint256 amount) public {
-    require (userData[msg.sender].userAddress == address(0));
+    require(userData[msg.sender].userAddress == address(0));
     userData[msg.sender].userAddress = _userAddress;
     userData[msg.sender].deposit = amount;
     userData[msg.sender].flag = false;
