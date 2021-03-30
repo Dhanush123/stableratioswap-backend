@@ -15,10 +15,10 @@ contract StableRatioSwap {
 
   using SafeMath for uint256;
 
-  // bytes32 JOB_ID = "";
-  // address private constant ORACLE = 0x;
-  // address private constant LINK_KOVAN = 0x; 
-  // address private constant NODE_ADDRESS = 0x;
+  // bytes32 jobID = "To_Be_Filled";
+  // address private constant ORACLE = 0xTo_Be_Filled;
+  // address private constant LINK_KOVAN = 0xTo_Be_Filled; 
+  // address private constant NODE_ADDRESS = 0xTo_Be_Filled;
 
   // These addresses are for Kovan
   address constant ILendingPoolAddressesProvider_Addr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
