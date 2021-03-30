@@ -136,7 +136,7 @@ contract StableRatioSwap is ChainlinkClient {
     userData[msg.sender].flag = !userData[msg.sender].flag;
   }
 
-  function swapStablecoinDeposit() internal onlyFlag {
+  function swapStablecoinDeposit() public onlyFlag {
 
   }
 
