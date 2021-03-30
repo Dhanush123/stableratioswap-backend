@@ -16,6 +16,7 @@ contract StableRatioSwap {
   address public owner;
   address[] public userAddresses;
   mapping(address => User) userData;
+  mapping(string => address) stableCoinAddresses;
   address pooladdr;
   ILendingPool pool;
 
@@ -45,17 +46,32 @@ contract StableRatioSwap {
     owner = msg.sender;
     pooladdr = ILendingPoolAddressesProvider().getLendingPool();
     pool = ILendingPool(pooladdr);
+    for (i = 0; i < allTokenData.length; i++) {
+      TokenData token = allTokenData[0];
+      string tokenSym = token.symbol;
+      address addr = token.tokenAddress;
+      stableCoinAddresses[tokenSym] = addr;
+    }
   }
 
-  function deposit(address userAddress, uint256 amount) public {
+  function deposit(uint256 amount, string tokenType) public {
     // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
     require(IERC20().approve(pool, amount));
+    
+    address token = stableCoinAddresses[tokenType];
+    pool.deposit(token, amount, msg.sender, 0);
 
-    // temporary addresses to make file compile, replace later @Hide
-    // address pool = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
-    address token = address(bytes20(sha256(abi.encodePacked(msg.sender,'block.timestamp'))));
-    // pool.deposit(token, amount, userAddress, 0);
-    emit Deposit(1,2,3,4,5);
+    if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("tusd"))) {
+      emit Deposit(amount, 0, 0, 0, 0);
+    } else if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("usdc"))) {
+      emit Deposit(0, amount, 0, 0, 0);
+    } else if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("usdt"))) {
+      emit Deposit(0, 0, amount, 0, 0);
+    } else if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("dai"))) {
+      emit Deposit(0, 0, 0, amount, 0);
+    } else if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("busd"))) {
+      emit Deposit(0, 0, 0, 0, amount);
+    } 
   }
 
   function createUser(address _userAddress, uint256 amount) public {
@@ -74,8 +90,10 @@ contract StableRatioSwap {
 
   }
 
-  function _getCurrentDepositData() internal view returns (uint256) {
-    AaveProtocolDataProvider().getUserReserveData(asset, msg.sender);
+  function _getCurrentDepositData(string tokenType) internal view returns (uint256) {
+    // Helper for getAllStablecoinDeposits()
+    address token = stableCoinAddresses[tokenType];
+    AaveProtocolDataProvider().getUserReserveData(token, msg.sender);
     return userData[msg.sender].deposit;
   }
 
