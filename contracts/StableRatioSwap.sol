@@ -11,12 +11,12 @@ import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AavePro
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract StableRatioSwap {
+contract StableRatioSwap is ChainlinkClient {
 
   using SafeMath for uint256;
 
-  // bytes32 jobID = "To_Be_Filled";
-  // address private constant ORACLE = 0xTo_Be_Filled;
+  bytes32 jobID = "35e14dbd490f4e3b9fbe92b85b32d98a";
+  address private constant ORACLE = 0xFC153f49E74711C3140CA06bFAcf42FfDC492A17;
   // address private constant LINK_KOVAN = 0xTo_Be_Filled; 
   // address private constant NODE_ADDRESS = 0xTo_Be_Filled;
 
@@ -57,6 +57,7 @@ contract StableRatioSwap {
   );
 
   constructor() public {
+    setPublicChainlinkToken();
     owner = msg.sender;
     pooladdr = ILendingPoolAddressesProvider(ILendingPoolAddressesProvider_Addr).getLendingPool();
     pool = ILendingPool(pooladdr);
