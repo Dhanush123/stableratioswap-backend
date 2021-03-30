@@ -21,6 +21,7 @@ contract StableRatioSwap {
   ILendingPool pool;
 
   TokenData[] allTokenData = AaveProtocolDataProvider().getAllATokens();
+  mapping(string => bool) stablecoinList;
   
   struct User {
     address userAddress;
@@ -50,13 +51,19 @@ contract StableRatioSwap {
       address addr = token.tokenAddress;
       stableCoinAddresses[tokenSym] = addr;
     }
+    stablecoinList["tusd"] = true;
+    stablecoinList["usdc"] = true;
+    stablecoinList["usdt"] = true;
+    stablecoinList["dai"] = true;
+    stablecoinList["busd"] = true;
   }
 
   function deposit(uint256 amount, string tokenType) public {
     // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
     require(IERC20().approve(pool, amount));
     // String check
-
+    require(stablecoinList[tokenType]);
+    
     address token = stableCoinAddresses[tokenType];
     pool.deposit(token, amount, msg.sender, 0);
 
