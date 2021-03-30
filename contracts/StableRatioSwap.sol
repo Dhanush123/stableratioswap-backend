@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 // HardHat Imports
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
+import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
 import {ILendingPoolAddressesProvider} from '@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol';
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
@@ -62,6 +63,7 @@ contract StableRatioSwap is ChainlinkClient {
     owner = msg.sender;
     pooladdr = ILendingPoolAddressesProvider(ILendingPoolAddressesProvider_Addr).getLendingPool();
     pool = ILendingPool(pooladdr);
+    // Constructing hashmaps
     AaveProtocolDataProvider.TokenData[] memory allTokenData = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getAllATokens();
     for (uint i = 0; i < allTokenData.length; i++) {
       AaveProtocolDataProvider.TokenData memory token = allTokenData[0];
@@ -138,16 +140,13 @@ contract StableRatioSwap is ChainlinkClient {
 
   }
 
-  function getTUSDRatio() public {
+  function requestTUSDRatio() public {
     Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfillEthereumPrice.selector);
-    req.add("function", "GLOBAL_QUOTE");
-    req.add("symbol", "TSLA");
-    string[] memory copyPath = new string[](2);
-    copyPath[0] = "Global Quote";
-    copyPath[1] = "05. price";
-    req.addStringArray("copyPath", copyPath);
-    req.addInt("times", 100000000);
     sendChainlinkRequestTo(oracle, req, fee);
+  }
+
+  function getTUSDRatio() public requestTUSDRatio(_requestID) {
+
   }
 
 }
