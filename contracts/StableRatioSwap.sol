@@ -6,8 +6,11 @@ import "hardhat/console.sol";
 import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
 import {ILendingPoolAddressesProvider} from '@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol';
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract StableRatioSwap {
+
+  using SafeMath for uint256;
 
   address public owner;
   address[] public userAddresses;
