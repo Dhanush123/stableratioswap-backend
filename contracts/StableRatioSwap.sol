@@ -55,6 +55,7 @@ contract StableRatioSwap {
   function deposit(uint256 amount, string tokenType) public {
     // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
     require(IERC20().approve(pool, amount));
+    // String check
 
     address token = stableCoinAddresses[tokenType];
     pool.deposit(token, amount, msg.sender, 0);
