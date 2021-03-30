@@ -39,9 +39,14 @@ contract StableRatioSwap {
   }
 
   modifier onlyOwner {
-    require(msg.sender == owner);
+    require(msg.sender == owner, 'Only Owner can call this function');
     _;
   }
+
+  //modifier onlyNode() {
+    //require(NODE_ADDRESS == msg.sender, 'Only Node can call this function');
+    //_;
+  //}
 
   event Deposit(
     uint256 tusd,
