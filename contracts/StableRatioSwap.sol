@@ -25,7 +25,6 @@ contract StableRatioSwap {
 
   struct User {
     address userAddress;
-    uint256 deposit;
     bool flag;
   }
 
@@ -57,7 +56,7 @@ contract StableRatioSwap {
   function deposit(uint256 amount, string tokenType) public {
     // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
     require(IERC20().approve(pool, amount));
-    
+
     address token = stableCoinAddresses[tokenType];
     pool.deposit(token, amount, msg.sender, 0);
 
@@ -74,10 +73,9 @@ contract StableRatioSwap {
     } 
   }
 
-  function createUser(address _userAddress, uint256 amount) public {
+  function createUser(address _userAddress) public {
     require(userData[msg.sender].userAddress == address(0));
     userData[msg.sender].userAddress = _userAddress;
-    userData[msg.sender].deposit = amount;
     userData[msg.sender].flag = false;
     userAddresses.push(msg.sender);
   }
