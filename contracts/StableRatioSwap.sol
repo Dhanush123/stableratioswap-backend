@@ -22,7 +22,6 @@ contract StableRatioSwap {
 
   TokenData[] allTokenData = AaveProtocolDataProvider().getAllATokens();
   
-
   struct User {
     address userAddress;
     bool flag;
@@ -85,14 +84,20 @@ contract StableRatioSwap {
   }
 
   function getAllStablecoinDeposits() public {
-
+    uint256 tusd = _getCurrentDepositData("tusd");
+    uint256 usdc = _getCurrentDepositData("usdc");
+    uint256 usdt = _getCurrentDepositData("usdt");
+    uint256 dai = _getCurrentDepositData("dai");
+    uint256 busd = _getCurrentDepositData("busd");
+    emit Deposit(tusd, usdc, usdt, dai, busd);
   }
 
   function _getCurrentDepositData(string tokenType) internal view returns (uint256) {
     // Helper for getAllStablecoinDeposits()
     address token = stableCoinAddresses[tokenType];
-    AaveProtocolDataProvider().getUserReserveData(token, msg.sender);
-    return userData[msg.sender].deposit;
+    uint256 currentBalance;
+    (currentBalance,,,,,,,,) = AaveProtocolDataProvider().getUserReserveData(token, msg.sender);
+    return currentBalance;
   }
 
   function _getHighestAPYStablecoinAlt() internal {
