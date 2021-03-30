@@ -40,8 +40,8 @@ contract StableRatioSwap is ChainlinkClient {
     bool flag;
   }
 
-  modifier onlyOwner {
-    require(msg.sender == owner, 'Only Owner can call this function');
+  modifier onlyFlag {
+    require(userData[msg.sender].flag, 'Call this function only when the flag of a user is true');
     _;
   }
 
@@ -136,7 +136,7 @@ contract StableRatioSwap is ChainlinkClient {
     userData[msg.sender].flag = !userData[msg.sender].flag;
   }
 
-  function swapStablecoinDeposit() internal onlyOwner {
+  function swapStablecoinDeposit() internal onlyFlag {
 
   }
 
