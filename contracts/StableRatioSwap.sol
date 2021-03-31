@@ -179,11 +179,12 @@ contract StableRatioSwap is ChainlinkClient {
     (tokenType, liquidityRate) = _getHighestAPYStablecoinAlt();
 
     uint256[] memory modes = new uint256[](5);
-      modes[0] = 1;
-      modes[1] = 1;
-      modes[2] = 1;
-      modes[3] = 1;
-      modes[4] = 1;
+    modes[0] = 1;
+    modes[1] = 1;
+    modes[2] = 1;
+    modes[3] = 1;
+    modes[4] = 1;
+    
     for(uint i; i < userAddresses.length; i++) {
       uint256 tusd;
       uint256 usdc;
