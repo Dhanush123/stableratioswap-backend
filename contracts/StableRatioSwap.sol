@@ -66,7 +66,7 @@ contract StableRatioSwap is ChainlinkClient {
     // Constructing hashmaps
     AaveProtocolDataProvider.TokenData[] memory allTokenData = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getAllATokens();
     for (uint i = 0; i < allTokenData.length; i++) {
-      AaveProtocolDataProvider.TokenData memory token = allTokenData[0];
+      AaveProtocolDataProvider.TokenData memory token = allTokenData[i];
       string memory tokenSym = token.symbol;
       address addr = token.tokenAddress;
       stableCoinAddresses[tokenSym] = addr;
@@ -129,7 +129,23 @@ contract StableRatioSwap is ChainlinkClient {
   }
 
   function _getHighestAPYStablecoinAlt() internal {
+    uint256 maxLiquidityRate = 0;
+    uint256 currentLiquidityRate;
+    (,,,currentLiquidityRate,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["TUSD"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    (,,,currentLiquidityRate,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["USDC"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    (,,,currentLiquidityRate,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["USDT"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    (,,,currentLiquidityRate,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["DAI"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    (,,,currentLiquidityRate,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["BUSD"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    return maxLiquidityRate;
+  }
 
+  function max(uint256 a, uint256 b) private pure returns (uint256) {
+    return a > b ? a : b;
   }
 
   function optToggle() public {
