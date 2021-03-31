@@ -16,13 +16,16 @@ contract StableRatioSwap is ChainlinkClient {
 
   using SafeMath for uint256;
 
-  bytes32 jobID = "35e14dbd490f4e3b9fbe92b85b32d98a";
+  // Constant variables for Chainlink external adaptor
+  bytes32 private constant jobID = "35e14dbd490f4e3b9fbe92b85b32d98a";
   address private constant oracle = 0xFC153f49E74711C3140CA06bFAcf42FfDC492A17;
-  uint256 private fee = 0.01 * 1 ether;
+  uint256 private constant fee = 0.01 * 1 ether;
 
   // These addresses are for Kovan
   address constant ILendingPoolAddressesProvider_Addr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
   address constant AaveProtocolDataProvider_Addr = 0x3c73A5E5785cAC854D468F727c606C07488a29D6;
+
+  uint256 ratio;
 
   address private owner;
   address[] private userAddresses;
@@ -167,8 +170,8 @@ contract StableRatioSwap is ChainlinkClient {
     sendChainlinkRequestTo(oracle, req, fee);
   }
 
-  function getTUSDRatio(bytes32 _requestID) public recordChainlinkFulfillment(_requestID) {
-
+  function getTUSDRatio(bytes32 _requestID, uint256 _ratio) public recordChainlinkFulfillment(_requestID) {
+    ratio = _ratio;
   }
 
 }
