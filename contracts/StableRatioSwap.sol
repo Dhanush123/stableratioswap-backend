@@ -26,7 +26,7 @@ contract StableRatioSwap is ChainlinkClient {
   address constant AaveProtocolDataProvider_Addr = 0x3c73A5E5785cAC854D468F727c606C07488a29D6;
 
   uint256 ratio;
-  address constant node_addr;
+  // address constant node_addr;
 
   address private owner;
   address[] private userAddresses;
@@ -42,10 +42,12 @@ contract StableRatioSwap is ChainlinkClient {
     bool flag;
   }
 
+  /*
   modifier onlyNode {
     require(msg.sender == node_addr, 'This function is only callable by a Node Adaptor');
     _;
   }
+  */
 
   event Deposit(
     uint256 tusd,
@@ -117,7 +119,7 @@ contract StableRatioSwap is ChainlinkClient {
     emit Deposit(tusd, usdc, usdt, dai, busd);
   }
 
-  function _getAllStablecoinDeposits(address userAddress) internal view {
+  function _getAllStablecoinDeposits(address userAddress) internal view returns (uint256, uint256, uint256, uint256, uint256) {
     uint256 tusd = _getCurrentDepositData(userAddress, "TUSD");
     uint256 usdc = _getCurrentDepositData(userAddress, "USDC");
     uint256 usdt = _getCurrentDepositData(userAddress, "USDT");
@@ -171,10 +173,10 @@ contract StableRatioSwap is ChainlinkClient {
     userData[msg.sender].flag = !userData[msg.sender].flag;
   }
 
-  function swapStablecoinDeposit() public onlyNode {
+  function swapStablecoinDeposit() public {
     string memory tokenType;
     uint256 liquidityRate;
-    (tokenType, liquidityRata) = _getHighestAPYStablecoinAlt();
+    (tokenType, liquidityRate) = _getHighestAPYStablecoinAlt();
     for(uint i; i < userAddresses.length; i++) {
       uint256 tusd;
       uint256 usdc;
@@ -182,12 +184,12 @@ contract StableRatioSwap is ChainlinkClient {
       uint256 dai;
       uint256 busd;
       (tusd, usdc, usdt, dai, busd) = _getAllStablecoinDeposits(userAddresses[i]);
-      uint256[] amounts = [tusd, usdc, usdt, dai, busd];
-      uint256[] modes = [1, 1, 1, 1, 1];
-      address[] calldata assets;
-      bytes calldata params;
-      address onBehalfOf;
-      flashLoan(userAddresses[i], assets, amounts, modes, onBehalfOf, params, 0);
+      uint256[5] memory amounts = [tusd, usdc, usdt, dai, busd];
+      uint256[5] memory modes = [1, 1, 1, 1, 1];
+      address[5] calldata assets = [stableCoinAddresses["TUSD"], stableCoinAddresses["USDC"], stableCoinAddresses["USDT"], stableCoinAddresses["DAI"], stableCoinAddresses["BUSD"]];
+      bytes calldata params = bytes(0);
+      address onBehalfOf = userAddresses[i];
+      pool.flashLoan(userAddresses[i], assets, amounts, modes, onBehalfOf, params, 0);
     }
   }
 
