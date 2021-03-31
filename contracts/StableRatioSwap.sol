@@ -177,6 +177,13 @@ contract StableRatioSwap is ChainlinkClient {
     string memory tokenType;
     uint256 liquidityRate;
     (tokenType, liquidityRate) = _getHighestAPYStablecoinAlt();
+
+    uint256[] memory modes = new uint256[](5);
+      modes[0] = 1;
+      modes[1] = 1;
+      modes[2] = 1;
+      modes[3] = 1;
+      modes[4] = 1;
     for(uint i; i < userAddresses.length; i++) {
       uint256 tusd;
       uint256 usdc;
@@ -184,10 +191,19 @@ contract StableRatioSwap is ChainlinkClient {
       uint256 dai;
       uint256 busd;
       (tusd, usdc, usdt, dai, busd) = _getAllStablecoinDeposits(userAddresses[i]);
-      uint256[5] memory amounts = [tusd, usdc, usdt, dai, busd];
-      uint256[5] memory modes = [1, 1, 1, 1, 1];
-      address[5] calldata assets = [stableCoinAddresses["TUSD"], stableCoinAddresses["USDC"], stableCoinAddresses["USDT"], stableCoinAddresses["DAI"], stableCoinAddresses["BUSD"]];
-      bytes calldata params = bytes(0);
+      uint256[] memory amounts = new uint256[](5);
+      amounts[0] = tusd;
+      amounts[1] = usdc;
+      amounts[2] = usdt;
+      amounts[3] = dai;
+      amounts[4] = busd;
+      address[] memory assets = new address[](5);
+      assets[0] = stableCoinAddresses["TUSD"];
+      assets[1] = stableCoinAddresses["USDC"];
+      assets[2] = stableCoinAddresses["USDT"];
+      assets[3] = stableCoinAddresses["DAI"];
+      assets[4] = stableCoinAddresses["BUSD"];
+      bytes memory params = "";
       address onBehalfOf = userAddresses[i];
       pool.flashLoan(userAddresses[i], assets, amounts, modes, onBehalfOf, params, 0);
     }
