@@ -26,6 +26,7 @@ contract StableRatioSwap is ChainlinkClient {
   address constant AaveProtocolDataProvider_Addr = 0x3c73A5E5785cAC854D468F727c606C07488a29D6;
 
   uint256 ratio;
+  // address constant node_addr;
 
   address private owner;
   address[] private userAddresses;
@@ -41,10 +42,12 @@ contract StableRatioSwap is ChainlinkClient {
     bool flag;
   }
 
-  modifier onlyFlag {
-    require(userData[msg.sender].flag, 'Call this function only when the flag of a user is true');
+  /*
+  modifier onlyNode {
+    require(msg.sender == node_addr, 'This function is only callable by a Node Adaptor');
     _;
   }
+  */
 
   event Deposit(
     uint256 tusd,
@@ -108,19 +111,28 @@ contract StableRatioSwap is ChainlinkClient {
   }
 
   function getAllStablecoinDeposits() public {
-    uint256 tusd = _getCurrentDepositData("TUSD");
-    uint256 usdc = _getCurrentDepositData("USDC");
-    uint256 usdt = _getCurrentDepositData("USDT");
-    uint256 dai = _getCurrentDepositData("DAI");
-    uint256 busd = _getCurrentDepositData("BUSD");
+    uint256 tusd = _getCurrentDepositData(msg.sender, "TUSD");
+    uint256 usdc = _getCurrentDepositData(msg.sender, "USDC");
+    uint256 usdt = _getCurrentDepositData(msg.sender, "USDT");
+    uint256 dai = _getCurrentDepositData(msg.sender, "DAI");
+    uint256 busd = _getCurrentDepositData(msg.sender, "BUSD");
     emit Deposit(tusd, usdc, usdt, dai, busd);
   }
 
-  function _getCurrentDepositData(string memory tokenType) internal view returns (uint256) {
+  function _getAllStablecoinDeposits(address userAddress) internal view returns (uint256, uint256, uint256, uint256, uint256) {
+    uint256 tusd = _getCurrentDepositData(userAddress, "TUSD");
+    uint256 usdc = _getCurrentDepositData(userAddress, "USDC");
+    uint256 usdt = _getCurrentDepositData(userAddress, "USDT");
+    uint256 dai = _getCurrentDepositData(userAddress, "DAI");
+    uint256 busd = _getCurrentDepositData(userAddress, "BUSD");
+    return (tusd, usdc, usdt, dai, busd);
+  }
+
+  function _getCurrentDepositData(address userAddress, string memory tokenType) internal view returns (uint256) {
     // Helper for getAllStablecoinDeposits()
     address token = stableCoinAddresses[tokenType];
     uint256 currentBalance;
-    (currentBalance,,,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getUserReserveData(token, msg.sender);
+    (currentBalance,,,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getUserReserveData(token, userAddress);
     return currentBalance;
   }
 
@@ -161,8 +173,40 @@ contract StableRatioSwap is ChainlinkClient {
     userData[msg.sender].flag = !userData[msg.sender].flag;
   }
 
-  function swapStablecoinDeposit() public onlyFlag {
+  function swapStablecoinDeposit() public {
+    string memory tokenType;
+    uint256 liquidityRate;
+    (tokenType, liquidityRate) = _getHighestAPYStablecoinAlt();
 
+    uint256[] memory modes = new uint256[](5);
+      modes[0] = 1;
+      modes[1] = 1;
+      modes[2] = 1;
+      modes[3] = 1;
+      modes[4] = 1;
+    for(uint i; i < userAddresses.length; i++) {
+      uint256 tusd;
+      uint256 usdc;
+      uint256 usdt;
+      uint256 dai;
+      uint256 busd;
+      (tusd, usdc, usdt, dai, busd) = _getAllStablecoinDeposits(userAddresses[i]);
+      uint256[] memory amounts = new uint256[](5);
+      amounts[0] = tusd;
+      amounts[1] = usdc;
+      amounts[2] = usdt;
+      amounts[3] = dai;
+      amounts[4] = busd;
+      address[] memory assets = new address[](5);
+      assets[0] = stableCoinAddresses["TUSD"];
+      assets[1] = stableCoinAddresses["USDC"];
+      assets[2] = stableCoinAddresses["USDT"];
+      assets[3] = stableCoinAddresses["DAI"];
+      assets[4] = stableCoinAddresses["BUSD"];
+      bytes memory params = "";
+      address onBehalfOf = userAddresses[i];
+      pool.flashLoan(userAddresses[i], assets, amounts, modes, onBehalfOf, params, 0);
+    }
   }
 
   function requestTUSDRatio() public {
