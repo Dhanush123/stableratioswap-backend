@@ -19,8 +19,6 @@ contract StableRatioSwap is ChainlinkClient {
   bytes32 jobID = "35e14dbd490f4e3b9fbe92b85b32d98a";
   address private constant oracle = 0xFC153f49E74711C3140CA06bFAcf42FfDC492A17;
   uint256 private fee = 0.01 * 1 ether;
-  // address private constant LINK_KOVAN = 0xTo_Be_Filled; 
-  // address private constant NODE_ADDRESS = 0xTo_Be_Filled;
 
   // These addresses are for Kovan
   address constant ILendingPoolAddressesProvider_Addr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
@@ -45,11 +43,6 @@ contract StableRatioSwap is ChainlinkClient {
     _;
   }
 
-  //modifier onlyNode() {
-    //require(NODE_ADDRESS == msg.sender, 'Only Node can call this function');
-    //_;
-  //}
-
   event Deposit(
     uint256 tusd,
     uint256 usdc,
@@ -66,7 +59,7 @@ contract StableRatioSwap is ChainlinkClient {
     // Constructing hashmaps
     AaveProtocolDataProvider.TokenData[] memory allTokenData = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getAllATokens();
     for (uint i = 0; i < allTokenData.length; i++) {
-      AaveProtocolDataProvider.TokenData memory token = allTokenData[0];
+      AaveProtocolDataProvider.TokenData memory token = allTokenData[i];
       string memory tokenSym = token.symbol;
       address addr = token.tokenAddress;
       stableCoinAddresses[tokenSym] = addr;
@@ -128,8 +121,37 @@ contract StableRatioSwap is ChainlinkClient {
     return currentBalance;
   }
 
-  function _getHighestAPYStablecoinAlt() internal {
+  function _getHighestAPYStablecoinAlt() internal view returns (string memory, uint256) {
+    uint256 maxLiquidityRate = 0;
+    uint256 currentLiquidityRate;
+    string memory tokenType = "TUSD";
+    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["TUSD"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["USDC"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    if (maxLiquidityRate == currentLiquidityRate) {
+      tokenType = "USDC";
+    }
+    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["USDT"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    if (maxLiquidityRate == currentLiquidityRate) {
+      tokenType = "USDT";
+    }
+    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["DAI"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    if (maxLiquidityRate == currentLiquidityRate) {
+      tokenType = "DAI";
+    }
+    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["BUSD"]);
+    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    if (maxLiquidityRate == currentLiquidityRate) {
+      tokenType = "BUSD";
+    }
+    return (tokenType, maxLiquidityRate);
+  }
 
+  function max(uint256 a, uint256 b) private pure returns (uint256) {
+    return a > b ? a : b;
   }
 
   function optToggle() public {
