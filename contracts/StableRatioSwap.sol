@@ -7,10 +7,10 @@ import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
-import {ILendingPoolAddressesProvider} from '@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol';
+import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract StableRatioSwap is ChainlinkClient {
 
@@ -22,8 +22,11 @@ contract StableRatioSwap is ChainlinkClient {
   uint256 private constant fee = 0.01 * 1 ether;
 
   // These addresses are for Kovan
-  address constant ILendingPoolAddressesProvider_Addr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
+  address constant LendingPoolAddressesProvider_Addr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
   address constant AaveProtocolDataProvider_Addr = 0x3c73A5E5785cAC854D468F727c606C07488a29D6;
+  AaveProtocolDataProvider protocolDataProvider;
+  address pooladdr;
+  ILendingPool pool;
 
   uint256 ratio;
   // address constant node_addr;
@@ -32,9 +35,6 @@ contract StableRatioSwap is ChainlinkClient {
   address[] private userAddresses;
   mapping(address => User) private userData;
   mapping(string => address) stableCoinAddresses;
-  address pooladdr;
-  ILendingPool pool;
-
   mapping(string => bool) stablecoinList;
   
   struct User {
@@ -60,10 +60,12 @@ contract StableRatioSwap is ChainlinkClient {
   constructor() public {
     setPublicChainlinkToken();
     owner = msg.sender;
-    pooladdr = ILendingPoolAddressesProvider(ILendingPoolAddressesProvider_Addr).getLendingPool();
+    protocolDataProvider = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr);
+    pooladdr = ILendingPoolAddressesProvider(LendingPoolAddressesProvider_Addr).getLendingPool();
     pool = ILendingPool(pooladdr);
+
     // Constructing hashmaps
-    AaveProtocolDataProvider.TokenData[] memory allTokenData = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getAllATokens();
+    AaveProtocolDataProvider.TokenData[] memory allTokenData = protocolDataProvider.getAllATokens();
     for (uint i = 0; i < allTokenData.length; i++) {
       AaveProtocolDataProvider.TokenData memory token = allTokenData[i];
       string memory tokenSym = token.symbol;
@@ -132,7 +134,7 @@ contract StableRatioSwap is ChainlinkClient {
     // Helper for getAllStablecoinDeposits()
     address token = stableCoinAddresses[tokenType];
     uint256 currentBalance;
-    (currentBalance,,,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getUserReserveData(token, userAddress);
+    (currentBalance,,,,,,,,) = protocolDataProvider.getUserReserveData(token, userAddress);
     return currentBalance;
   }
 
@@ -140,24 +142,24 @@ contract StableRatioSwap is ChainlinkClient {
     uint256 maxLiquidityRate = 0;
     uint256 currentLiquidityRate;
     string memory tokenType = "TUSD";
-    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["TUSD"]);
+    (,,,currentLiquidityRate,,,,,,) = protocolDataProvider.getReserveData(stableCoinAddresses["TUSD"]);
     maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
-    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["USDC"]);
+    (,,,currentLiquidityRate,,,,,,) = protocolDataProvider.getReserveData(stableCoinAddresses["USDC"]);
     maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
     if (maxLiquidityRate == currentLiquidityRate) {
       tokenType = "USDC";
     }
-    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["USDT"]);
+    (,,,currentLiquidityRate,,,,,,) = protocolDataProvider.getReserveData(stableCoinAddresses["USDT"]);
     maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
     if (maxLiquidityRate == currentLiquidityRate) {
       tokenType = "USDT";
     }
-    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["DAI"]);
+    (,,,currentLiquidityRate,,,,,,) = protocolDataProvider.getReserveData(stableCoinAddresses["DAI"]);
     maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
     if (maxLiquidityRate == currentLiquidityRate) {
       tokenType = "DAI";
     }
-    (,,,currentLiquidityRate,,,,,,) = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr).getReserveData(stableCoinAddresses["BUSD"]);
+    (,,,currentLiquidityRate,,,,,,) = protocolDataProvider.getReserveData(stableCoinAddresses["BUSD"]);
     maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
     if (maxLiquidityRate == currentLiquidityRate) {
       tokenType = "BUSD";
@@ -206,7 +208,7 @@ contract StableRatioSwap is ChainlinkClient {
       assets[4] = stableCoinAddresses["BUSD"];
       bytes memory params = "";
       address onBehalfOf = userAddresses[i];
-      pool.flashLoan(userAddresses[i], assets, amounts, modes, onBehalfOf, params, 0);
+      pool.flashLoan(address(this), assets, amounts, modes, onBehalfOf, params, 0);
     }
   }
 
