@@ -11,10 +11,13 @@ import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfa
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StableRatioSwap is ChainlinkClient {
+contract StableRatioSwap is ChainlinkClient, Ownable {
 
   using SafeMath for uint256;
+  using Address for address;
 
   // Constant variables for Chainlink external adaptor
   bytes32 private constant jobID = "35e14dbd490f4e3b9fbe92b85b32d98a";
@@ -31,7 +34,7 @@ contract StableRatioSwap is ChainlinkClient {
   uint256 ratio;
   // address constant node_addr;
 
-  address private owner;
+  // address private owner;
   address[] private userAddresses;
   mapping(address => User) private userData;
   mapping(string => address) stableCoinAddresses;
@@ -59,7 +62,7 @@ contract StableRatioSwap is ChainlinkClient {
 
   constructor() public {
     setPublicChainlinkToken();
-    owner = msg.sender;
+    // owner = msg.sender;
     protocolDataProvider = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr);
     pooladdr = ILendingPoolAddressesProvider(LendingPoolAddressesProvider_Addr).getLendingPool();
     pool = ILendingPool(pooladdr);
