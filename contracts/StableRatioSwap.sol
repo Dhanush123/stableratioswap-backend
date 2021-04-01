@@ -228,7 +228,14 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     modes[2] = 1;
     modes[3] = 1;
     modes[4] = 1;
-    
+
+    address[] memory assets = new address[](5);
+    assets[0] = stableCoinAddresses["TUSD"];
+    assets[1] = stableCoinAddresses["USDC"];
+    assets[2] = stableCoinAddresses["USDT"];
+    assets[3] = stableCoinAddresses["DAI"];
+    assets[4] = stableCoinAddresses["BUSD"];
+  
     for(uint i; i < userAddresses.length; i++) {
       uint256 tusd;
       uint256 usdc;
@@ -242,15 +249,8 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
       amounts[2] = usdt;
       amounts[3] = dai;
       amounts[4] = busd;
-      address[] memory assets = new address[](5);
-      assets[0] = stableCoinAddresses["TUSD"];
-      assets[1] = stableCoinAddresses["USDC"];
-      assets[2] = stableCoinAddresses["USDT"];
-      assets[3] = stableCoinAddresses["DAI"];
-      assets[4] = stableCoinAddresses["BUSD"];
-      bytes memory params = "";
       address onBehalfOf = userAddresses[i];
-      LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, params, 0);
+      LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
     }
   }
 
