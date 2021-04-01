@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import {IFlashLoanReceiver} from "@aave/protocol-v2/contracts/flashloan/interfaces/IFlashLoanReceiver.sol";
 import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
 import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
@@ -14,7 +15,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StableRatioSwap is ChainlinkClient, Ownable {
+contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
 
   using SafeMath for uint256;
   using Address for address;
@@ -25,32 +26,35 @@ contract StableRatioSwap is ChainlinkClient, Ownable {
   uint256 private constant fee = 0.01 * 1 ether;
 
   // These addresses are for Kovan
-  address constant LendingPoolAddressesProvider_Addr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
-  address constant AaveProtocolDataProvider_Addr = 0x3c73A5E5785cAC854D468F727c606C07488a29D6;
+  address constant lendingPoolAddressesProviderAddr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
+  address constant aaveProtocolDataProviderAddr = 0x3c73A5E5785cAC854D468F727c606C07488a29D6;
   AaveProtocolDataProvider protocolDataProvider;
-  address pooladdr;
-  ILendingPool pool;
+  address poolAddr;
+  // ILendingPool pool;
 
   uint256 ratio;
-  // address constant node_addr;
+  // address constant nodeAddr;
 
   // address private owner;
   address[] private userAddresses;
   mapping(address => User) private userData;
   mapping(string => address) stableCoinAddresses;
   mapping(string => bool) stablecoinList;
+
+  ILendingPoolAddressesProvider public override ADDRESSES_PROVIDER;
+  ILendingPool public override LENDING_POOL;
+  
+  /*
+  modifier onlyNode {
+    require(msg.sender == nodeAddr, 'This function is only callable by a Node Adaptor');
+    _;
+  }
+  */
   
   struct User {
     address userAddress;
     bool flag;
   }
-
-  /*
-  modifier onlyNode {
-    require(msg.sender == node_addr, 'This function is only callable by a Node Adaptor');
-    _;
-  }
-  */
 
   event Deposit(
     uint256 tusd,
@@ -63,9 +67,10 @@ contract StableRatioSwap is ChainlinkClient, Ownable {
   constructor() public {
     setPublicChainlinkToken();
     // owner = msg.sender;
-    protocolDataProvider = AaveProtocolDataProvider(AaveProtocolDataProvider_Addr);
-    pooladdr = ILendingPoolAddressesProvider(LendingPoolAddressesProvider_Addr).getLendingPool();
-    pool = ILendingPool(pooladdr);
+    protocolDataProvider = AaveProtocolDataProvider(aaveProtocolDataProviderAddr);
+    ADDRESSES_PROVIDER  = ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddr);
+    poolAddr = ADDRESSES_PROVIDER.getLendingPool();
+    LENDING_POOL = ILendingPool(poolAddr);
 
     // Constructing hashmaps
     AaveProtocolDataProvider.TokenData[] memory allTokenData = protocolDataProvider.getAllATokens();
@@ -87,9 +92,9 @@ contract StableRatioSwap is ChainlinkClient, Ownable {
     require(stablecoinList[tokenType]);
     address token = stableCoinAddresses[tokenType];
     // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
-    require(IERC20(token).approve(pooladdr, amount));
+    require(IERC20(token).approve(poolAddr, amount));
     
-    pool.deposit(token, amount, msg.sender, 0);
+    LENDING_POOL.deposit(token, amount, msg.sender, 0);
 
     if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("TUSD"))) {
       emit Deposit(amount, 0, 0, 0, 0);
@@ -178,6 +183,40 @@ contract StableRatioSwap is ChainlinkClient, Ownable {
     userData[msg.sender].flag = !userData[msg.sender].flag;
   }
 
+  /**
+    This function is called after your contract has received the flash loaned amount
+  */
+  function executeOperation(
+      address[] calldata assets,
+      uint256[] calldata amounts,
+      uint256[] calldata premiums,
+      address initiator,
+      bytes calldata params
+  )
+      external
+      override
+      returns (bool)
+  {
+
+      //
+      // This contract now has the funds requested.
+      // Your logic goes here.
+      //
+      
+      // At the end of your logic above, this contract owes
+      // the flashloaned amounts + premiums.
+      // Therefore ensure your contract has enough to repay
+      // these amounts.
+      
+      // Approve the LendingPool contract allowance to *pull* the owed amount
+      for (uint i = 0; i < assets.length; i++) {
+          uint amountOwing = amounts[i].add(premiums[i]);
+          IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
+      }
+      
+      return true;
+  }
+
   function swapStablecoinDeposit() public {
     string memory tokenType;
     uint256 liquidityRate;
@@ -211,7 +250,7 @@ contract StableRatioSwap is ChainlinkClient, Ownable {
       assets[4] = stableCoinAddresses["BUSD"];
       bytes memory params = "";
       address onBehalfOf = userAddresses[i];
-      pool.flashLoan(address(this), assets, amounts, modes, onBehalfOf, params, 0);
+      LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, params, 0);
     }
   }
 
@@ -223,5 +262,7 @@ contract StableRatioSwap is ChainlinkClient, Ownable {
   function getTUSDRatio(bytes32 _requestID, uint256 _ratio) public recordChainlinkFulfillment(_requestID) {
     ratio = _ratio;
   }
+
+  receive() external payable {}
 
 }
