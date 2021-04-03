@@ -56,7 +56,6 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     bool optInStatus;
   }
 
-  /**
   event Deposit(
     uint256 tusd,
     uint256 usdc,
@@ -64,7 +63,6 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     uint256 dai,
     uint256 busd
   );
-  */
 
   event Bool(
     bool _bool
@@ -214,7 +212,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
 
   function swapStablecoinDeposit() public {
     requestTUSDRatio();
-    require(ratio > 1.5, "The transaction terminated because the TUSD ratio is not bigger than 1.5.");
+    require(ratio > 1, "The transaction terminated because the TUSD ratio is not bigger than 1.5.");
     string memory tokenType;
     uint256 liquidityRate;
     (tokenType, liquidityRate) = _getHighestAPYStablecoinAlt();
@@ -235,7 +233,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
         LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
       }
     }
-    
+
     emit Bool(true);
   }
 
