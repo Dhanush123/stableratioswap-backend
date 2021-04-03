@@ -56,6 +56,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     bool optInStatus;
   }
 
+  /**
   event Deposit(
     uint256 tusd,
     uint256 usdc,
@@ -63,9 +64,10 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     uint256 dai,
     uint256 busd
   );
+  */
 
-  event OptInStatus(
-    bool optInStatus
+  event Bool(
+    bool _bool
   );
 
   constructor() public {
@@ -173,7 +175,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
 
   function optInToggle() public {
     userData[msg.sender].optInStatus = !userData[msg.sender].optInStatus;
-    emit OptInStatus(userData[msg.sender].optInStatus);
+    emit Bool(userData[msg.sender].optInStatus);
   }
 
   /**
@@ -211,40 +213,30 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
   }
 
   function swapStablecoinDeposit() public {
+    requestTUSDRatio();
+    require(ratio > 1.5, "The transaction terminated because the TUSD ratio is not bigger than 1.5.");
     string memory tokenType;
     uint256 liquidityRate;
     (tokenType, liquidityRate) = _getHighestAPYStablecoinAlt();
 
-    uint256[] memory modes = new uint256[](5);
+    uint256[] memory modes = new uint256[](1);
     modes[0] = 1;
-    modes[1] = 1;
-    modes[2] = 1;
-    modes[3] = 1;
-    modes[4] = 1;
 
-    address[] memory assets = new address[](5);
+    address[] memory assets = new address[](1);
     assets[0] = stableCoinAddresses["TUSD"];
-    assets[1] = stableCoinAddresses["USDC"];
-    assets[2] = stableCoinAddresses["USDT"];
-    assets[3] = stableCoinAddresses["DAI"];
-    assets[4] = stableCoinAddresses["BUSD"];
   
     for(uint i; i < userAddresses.length; i++) {
-      uint256 tusd;
-      uint256 usdc;
-      uint256 usdt;
-      uint256 dai;
-      uint256 busd;
-      (tusd, usdc, usdt, dai, busd) = _getAllStablecoinDeposits(userAddresses[i]);
-      uint256[] memory amounts = new uint256[](5);
-      amounts[0] = tusd;
-      amounts[1] = usdc;
-      amounts[2] = usdt;
-      amounts[3] = dai;
-      amounts[4] = busd;
-      address onBehalfOf = userAddresses[i];
-      LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
+      if (userData[userAddresses[i]].optInStatus) {
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = _getCurrentDepositData(userAddresses[i], "TUSD");
+      
+        address onBehalfOf = userAddresses[i];
+        // Swap here?
+        LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
+      }
     }
+    
+    emit Bool(true);
   }
 
   function requestTUSDRatio() public {
