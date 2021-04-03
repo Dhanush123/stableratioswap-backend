@@ -95,18 +95,6 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     require(IERC20(token).approve(poolAddr, amount));
     
     LENDING_POOL.deposit(token, amount, msg.sender, 0);
-
-    if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("TUSD"))) {
-      emit Deposit(amount, 0, 0, 0, 0);
-    } else if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("USDC"))) {
-      emit Deposit(0, amount, 0, 0, 0);
-    } else if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("USDT"))) {
-      emit Deposit(0, 0, amount, 0, 0);
-    } else if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("DAI"))) {
-      emit Deposit(0, 0, 0, amount, 0);
-    } else if (keccak256(abi.encodePacked(tokenType)) == keccak256(abi.encodePacked("BUSD"))) {
-      emit Deposit(0, 0, 0, 0, amount);
-    } 
   }
 
   function createUser(address _userAddress) public {
