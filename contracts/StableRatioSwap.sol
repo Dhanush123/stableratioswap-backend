@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 // HardHat Imports
 import "hardhat/console.sol";
+import "./IStableRatioSwap.sol";
 
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
@@ -19,7 +20,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
+contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceiver, Ownable {
 
   using SafeMath for uint256;
   using Address for address;
@@ -60,6 +61,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     bool optInStatus;
   }
 
+  /**
   event Deposit(
     uint256 tusd,
     uint256 usdc,
@@ -71,6 +73,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
   event Bool(
     bool _bool
   );
+  */
 
   constructor() public {
     setPublicChainlinkToken();
@@ -95,7 +98,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     stablecoinList["BUSD"] = true;
   }
 
-  function deposit(uint256 amount, string memory tokenType, address sender) public {
+  function deposit(uint256 amount, string memory tokenType, address sender) internal {
     // String check
     require(stablecoinList[tokenType]);
     address token = stableCoinAddresses[tokenType];
@@ -105,24 +108,27 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     LENDING_POOL.deposit(token, amount, sender, 0);
   }
 
-  function createUser(address _userAddress) public {
+  function createUser(address _userAddress) external override returns (bool) {
     require(userData[msg.sender].userAddress == address(0));
     userData[msg.sender].userAddress = _userAddress;
     userData[msg.sender].optInStatus = false;
     userAddresses.push(msg.sender);
+    emit Bool(true);
+    return true;
   }
 
-  function getAllUsers() external view returns (address[] memory) {
+  function getAllUsers() internal view returns (address[] memory) {
     return userAddresses;
   }
 
-  function getAllStablecoinDeposits() public {
+  function getAllStablecoinDeposits() external override returns (bool) {
     uint256 tusd = _getCurrentDepositData(msg.sender, "TUSD");
     uint256 usdc = _getCurrentDepositData(msg.sender, "USDC");
     uint256 usdt = _getCurrentDepositData(msg.sender, "USDT");
     uint256 dai = _getCurrentDepositData(msg.sender, "DAI");
     uint256 busd = _getCurrentDepositData(msg.sender, "BUSD");
     emit Deposit(tusd, usdc, usdt, dai, busd);
+    return true;
   }
 
   function _getAllStablecoinDeposits(address userAddress) internal view returns (uint256, uint256, uint256, uint256, uint256) {
@@ -175,9 +181,10 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     return a > b ? a : b;
   }
 
-  function optInToggle() public {
+  function optInToggle() external override returns (bool) {
     userData[msg.sender].optInStatus = !userData[msg.sender].optInStatus;
     emit Bool(userData[msg.sender].optInStatus);
+    return userData[msg.sender].optInStatus;
   }
 
   /**
@@ -216,7 +223,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
       return true;
   }
 
-  function swapStablecoinDeposit() public {
+  function swapStablecoinDeposit() external override returns (bool) {
     requestTUSDRatio();
     require(ratio > 1, "The transaction terminated because the TUSD ratio is not bigger than 1.5.");
     string memory tokenType;
@@ -242,9 +249,10 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     }
 
     emit Bool(true);
+    return true;
   }
 
-  function requestTUSDRatio() public {
+  function requestTUSDRatio() internal {
     Chainlink.Request memory req = buildChainlinkRequest(jobID, address(this), this.getTUSDRatio.selector);
     sendChainlinkRequestTo(oracle, req, fee);
   }
