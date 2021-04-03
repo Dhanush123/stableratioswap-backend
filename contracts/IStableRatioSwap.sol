@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 interface IStableRatioSwap {
     /**
-     * Emit a {Deposit} event
+     * Emit a {Bool} event
      */
     function createUser(address _userAddress) external returns (bool);
 
