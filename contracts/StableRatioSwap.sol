@@ -61,20 +61,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     bool optInStatus;
   }
 
-  /**
-  event Deposit(
-    uint256 tusd,
-    uint256 usdc,
-    uint256 usdt,
-    uint256 dai,
-    uint256 busd
-  );
-
-  event Bool(
-    bool _bool
-  );
-  */
-
   constructor() public {
     setPublicChainlinkToken();
     // owner = msg.sender;
