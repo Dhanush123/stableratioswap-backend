@@ -4,12 +4,16 @@ pragma experimental ABIEncoderV2;
 
 // HardHat Imports
 import "hardhat/console.sol";
+
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+
 import {IFlashLoanReceiver} from "@aave/protocol-v2/contracts/flashloan/interfaces/IFlashLoanReceiver.sol";
 import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
 import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
+// import {UniswapliquiditySwapAdapter} from "@aave/protocol-v2/contracts/adapters/UniswapliquiditySwapAdapter.sol";
+
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
@@ -91,14 +95,14 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     stablecoinList["BUSD"] = true;
   }
 
-  function deposit(uint256 amount, string memory tokenType) public {
+  function deposit(uint256 amount, string memory tokenType, address sender) public {
     // String check
     require(stablecoinList[tokenType]);
     address token = stableCoinAddresses[tokenType];
     // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
     require(IERC20(token).approve(poolAddr, amount));
     
-    LENDING_POOL.deposit(token, amount, msg.sender, 0);
+    LENDING_POOL.deposit(token, amount, sender, 0);
   }
 
   function createUser(address _userAddress) public {
@@ -195,6 +199,8 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
       // This contract now has the funds requested.
       // Your logic goes here.
       //
+      require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
+
       
       // At the end of your logic above, this contract owes
       // the flashloaned amounts + premiums.
@@ -231,6 +237,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
         address onBehalfOf = userAddresses[i];
         // Swap here?
         LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
+        deposit(amounts[0], tokenType, onBehalfOf);
       }
     }
 
@@ -246,6 +253,6 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     ratio = _ratio;
   }
 
-  receive() external payable {}
+  // receive() external payable {}
 
 }
