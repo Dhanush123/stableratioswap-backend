@@ -53,7 +53,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
   
   struct User {
     address userAddress;
-    bool flag;
+    bool optInStatus;
   }
 
   event Deposit(
@@ -62,6 +62,10 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     uint256 usdt,
     uint256 dai,
     uint256 busd
+  );
+
+  event OptInStatus(
+    bool optInStatus
   );
 
   constructor() public {
@@ -100,7 +104,7 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
   function createUser(address _userAddress) public {
     require(userData[msg.sender].userAddress == address(0));
     userData[msg.sender].userAddress = _userAddress;
-    userData[msg.sender].flag = false;
+    userData[msg.sender].optInStatus = false;
     userAddresses.push(msg.sender);
   }
 
@@ -167,8 +171,9 @@ contract StableRatioSwap is ChainlinkClient, IFlashLoanReceiver, Ownable {
     return a > b ? a : b;
   }
 
-  function optToggle() public {
-    userData[msg.sender].flag = !userData[msg.sender].flag;
+  function optInToggle() public {
+    userData[msg.sender].optInStatus = !userData[msg.sender].optInStatus;
+    emit OptInStatus(userData[msg.sender].optInStatus);
   }
 
   /**
