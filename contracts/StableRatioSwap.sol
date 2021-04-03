@@ -211,7 +211,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
 
   function swapStablecoinDeposit() external override returns (bool) {
     requestTUSDRatio();
-    require(ratio > 1, "The transaction terminated because the TUSD ratio is not bigger than 1.5.");
+    require(ratio > 1, "The transaction terminated because the TUSD ratio is not bigger than 1");
     string memory tokenType;
     uint256 liquidityRate;
     (tokenType, liquidityRate) = _getHighestAPYStablecoinAlt();
