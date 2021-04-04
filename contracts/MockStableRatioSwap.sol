@@ -34,9 +34,9 @@ contract MockStableRatioSwap is IStableRatioSwap {
     require(stablecoinList[tokenType]);
   }
 
-  function createUser(address _userAddress) external override returns (bool) {
+  function createUser() external override returns (bool) {
     require(userData[msg.sender].userAddress == address(0));
-    userData[msg.sender].userAddress = _userAddress;
+    userData[msg.sender].userAddress = msg.sender;
     userData[msg.sender].optInStatus = false;
     userAddresses.push(msg.sender);
     emit Bool(true);
