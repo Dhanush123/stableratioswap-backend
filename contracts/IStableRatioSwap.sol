@@ -6,7 +6,7 @@ interface IStableRatioSwap {
     /**
      * Emit a {Bool} event
      */
-    function createUser(address _userAddress) external returns (bool);
+    function createUser() external returns (bool);
 
     /**
      * Emit a {Deposit} event
