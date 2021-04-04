@@ -117,15 +117,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     return true;
   }
 
-  function _getAllStablecoinDeposits(address userAddress) internal view returns (uint256, uint256, uint256, uint256, uint256) {
-    uint256 tusd = _getCurrentDepositData(userAddress, "TUSD");
-    uint256 usdc = _getCurrentDepositData(userAddress, "USDC");
-    uint256 usdt = _getCurrentDepositData(userAddress, "USDT");
-    uint256 dai = _getCurrentDepositData(userAddress, "DAI");
-    uint256 busd = _getCurrentDepositData(userAddress, "BUSD");
-    return (tusd, usdc, usdt, dai, busd);
-  }
-
   function _getCurrentDepositData(address userAddress, string memory tokenType) internal view returns (uint256) {
     // Helper for getAllStablecoinDeposits()
     address token = stableCoinAddresses[tokenType];
