@@ -123,7 +123,7 @@ contract MockStableRatioSwap is IStableRatioSwap {
 
   function swapStablecoinDeposit() external override returns (bool) {
     requestTUSDRatio();
-    require(ratio > 1, "The transaction terminated because the TUSD ratio is not bigger than 1");
+    require(ratio > 10000, "The transaction terminated because the TUSD ratio is not bigger than 1");
     emit Bool(true);
     return true;
   }
