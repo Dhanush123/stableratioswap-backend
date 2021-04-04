@@ -108,21 +108,21 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   }
 
   function getAllStablecoinDeposits() external override returns (bool) {
-    uint256 tusd = _getCurrentDepositData(msg.sender, "TUSD");
-    uint256 usdc = _getCurrentDepositData(msg.sender, "USDC");
-    uint256 usdt = _getCurrentDepositData(msg.sender, "USDT");
-    uint256 dai = _getCurrentDepositData(msg.sender, "DAI");
-    uint256 busd = _getCurrentDepositData(msg.sender, "BUSD");
-    emit Deposit(tusd, usdc, usdt, dai, busd);
+    (uint tusd, uint decimalsTusd) = _getCurrentDepositData(msg.sender, "TUSD");
+    (uint usdc, uint decimalsUsdc) = _getCurrentDepositData(msg.sender, "USDC");
+    (uint usdt, uint decimalsUsdt) = _getCurrentDepositData(msg.sender, "USDT");
+    (uint dai, uint decimalsDai) = _getCurrentDepositData(msg.sender, "DAI");
+    (uint busd, uint decimalsBusd) = _getCurrentDepositData(msg.sender, "BUSD");
+    emit Deposit(tusd, decimalsTusd, usdc, decimalsUsdc, usdt, decimalsUsdt, dai, decimalsDai, busd, decimalsBusd);
     return true;
   }
 
-  function _getCurrentDepositData(address userAddress, string memory tokenType) internal view returns (uint256) {
+  function _getCurrentDepositData(address userAddress, string memory tokenType) internal view returns (uint, uint) {
     // Helper for getAllStablecoinDeposits()
     address token = stableCoinAddresses[tokenType];
-    uint256 currentBalance;
-    (currentBalance,,,,,,,,) = protocolDataProvider.getUserReserveData(token, userAddress);
-    return currentBalance;
+    (uint currentBalance,,,,,,,,) = protocolDataProvider.getUserReserveData(token, userAddress);
+    (uint decimals,,,,,,,,,) = protocolDataProvider.getReserveConfigurationData(token);
+    return (currentBalance,decimals);
   }
 
   function _getHighestAPYStablecoinAlt() internal view returns (string memory, uint256) {
@@ -216,7 +216,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     for(uint i; i < userAddresses.length; i++) {
       if (userData[userAddresses[i]].optInStatus) {
         uint256[] memory amounts = new uint256[](1);
-        amounts[0] = _getCurrentDepositData(userAddresses[i], "TUSD");
+        (amounts[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
       
         address onBehalfOf = userAddresses[i];
         // Swap here?

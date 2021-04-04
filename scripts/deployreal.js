@@ -1,8 +1,10 @@
 // This is a script for deploying your contracts. You can adapt it to deploy
 // yours, or create new ones.
 const PROJECT_NAME = 'StableRatioSwap';
+console.log("!!!!",__dirname);
 
 async function main() {
+  console.log("!!!!",__dirname);
   // This is just a convenience check
   if (network.name === "hardhat") {
     console.warn(
