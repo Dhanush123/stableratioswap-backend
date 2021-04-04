@@ -24,11 +24,16 @@ interface IStableRatioSwap {
     function swapStablecoinDeposit() external returns (bool);
 
     event Deposit(
-        uint256 tusd,
-        uint256 usdc,
-        uint256 usdt,
-        uint256 dai,
-        uint256 busd
+        uint tusd,
+        uint decimalsTusd,
+        uint usdc,
+        uint decimalsUsdc,
+        uint usdt,
+        uint decimalsUsdt,
+        uint dai,
+        uint decimalsDai,
+        uint busd,
+        uint decimalsBusd
     );
 
     event Bool(
