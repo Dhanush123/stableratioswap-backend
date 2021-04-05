@@ -38,12 +38,14 @@ contract MockStableRatioSwap is IStableRatioSwap {
   }
 
   function createUser() external override {
-    require(userData[msg.sender].userAddress == address(0));
-    userData[msg.sender].userAddress = msg.sender;
-    userData[msg.sender].optInStatus = false;
-    userAddresses.push(msg.sender);
-    // emit Bool(true);
-    // return true;
+    if (userData[msg.sender].userAddress == address(0)) {
+      userData[msg.sender].userAddress = msg.sender;
+      userData[msg.sender].optInStatus = false;
+      userAddresses.push(msg.sender);
+      emit CreateUser(true);
+    } else {
+      emit CreateUser(false);
+    }
   }
 
   function getAllUsers() internal view returns (address[] memory) {
@@ -74,14 +76,13 @@ contract MockStableRatioSwap is IStableRatioSwap {
 
   function optInToggle() external override {
     userData[msg.sender].optInStatus = !userData[msg.sender].optInStatus;
-    // emit Bool(userData[msg.sender].optInStatus);
+    emit OptInToggle(userData[msg.sender].optInStatus);
   }
 
   function swapStablecoinDeposit() external override {
     requestTUSDRatio();
     require(ratio > 10000, "The transaction terminated because the TUSD ratio is not bigger than 1");
-    // emit Bool(true);
-    // return true;
+    emit SwapStablecoinDeposit(true);
   }
 
   function requestTUSDRatio() internal {
