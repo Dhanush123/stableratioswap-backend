@@ -84,7 +84,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     stablecoinList["BUSD"] = true;
   }
 
-  function deposit(uint amount, string memory tokenType, address sender) public {
+  function deposit(uint amount, string memory tokenType, address sender) public override {
     // String check
     require(stablecoinList[tokenType]);
     address token = stableCoinAddresses[tokenType];
@@ -109,14 +109,13 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     return userAddresses;
   }
 
-  function getAllStablecoinDeposits() external override returns (bool) {
+  function getAllStablecoinDeposits() external override {
     (uint tusd, uint decimalsTusd) = _getCurrentDepositData(msg.sender, "TUSD");
     (uint usdc, uint decimalsUsdc) = _getCurrentDepositData(msg.sender, "USDC");
     (uint usdt, uint decimalsUsdt) = _getCurrentDepositData(msg.sender, "USDT");
     (uint dai, uint decimalsDai) = _getCurrentDepositData(msg.sender, "DAI");
     (uint busd, uint decimalsBusd) = _getCurrentDepositData(msg.sender, "BUSD");
     emit Deposit(tusd, decimalsTusd, usdc, decimalsUsdc, usdt, decimalsUsdt, dai, decimalsDai, busd, decimalsBusd);
-    return true;
   }
 
   function _getCurrentDepositData(address userAddress, string memory tokenType) internal view returns (uint, uint) {
