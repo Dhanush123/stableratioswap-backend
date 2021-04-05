@@ -3,16 +3,19 @@ pragma solidity >=0.6.12;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import "./IStableRatioSwap.sol";
 
 contract MockStableRatioSwap is IStableRatioSwap {
 
   using SafeMath for uint;
-  // using Address for address;
+  using Address for address;
 
   uint ratio;
+  uint nonce;
 
   address[] private userAddresses;
+
   mapping(address => User) private userData;
   mapping(string => bool) stablecoinList;
 
@@ -29,17 +32,17 @@ contract MockStableRatioSwap is IStableRatioSwap {
     stablecoinList["BUSD"] = true;
   }
 
-  function deposit(uint amount, string memory tokenType, address sender) internal {
+  function deposit(uint amount, string memory tokenType, address sender) public {
     // String check
     require(stablecoinList[tokenType]);
   }
 
-  function createUser() external override returns (bool) {
+  function createUser() external override {
     require(userData[msg.sender].userAddress == address(0));
     userData[msg.sender].userAddress = msg.sender;
     userData[msg.sender].optInStatus = false;
     userAddresses.push(msg.sender);
-    emit Bool(true);
+    // emit Bool(true);
     return true;
   }
 
@@ -57,8 +60,8 @@ contract MockStableRatioSwap is IStableRatioSwap {
     return true;
   }
 
-  function _getCurrentDepositData(address userAddress, string memory tokenType) internal view returns (uint, uint) {
-    return (100,2);
+  function _getCurrentDepositData(address userAddress, string memory tokenType) internal returns (uint, uint) {
+    return (random(),2); //i.e. 10100, 2 == 101.00
   }
 
   function _getHighestAPYStablecoinAlt() internal view returns (string memory, uint) {
@@ -70,56 +73,26 @@ contract MockStableRatioSwap is IStableRatioSwap {
     return a > b ? a : b;
   }
 
-  function optInToggle() external override returns (bool) {
+  function optInToggle() external override {
     userData[msg.sender].optInStatus = !userData[msg.sender].optInStatus;
-    emit Bool(userData[msg.sender].optInStatus);
-    return userData[msg.sender].optInStatus;
+    // emit Bool(userData[msg.sender].optInStatus);
   }
 
-  // /**
-  //   This function is called after your contract has received the flash loaned amount
-  // */
-  // function executeOperation(
-  //     address[] calldata assets,
-  //     uint[] calldata amounts,
-  //     uint[] calldata premiums,
-  //     address initiator,
-  //     bytes calldata params
-  // )
-  //     external
-  //     override
-  //     returns (bool)
-  // {
-
-  //     //
-  //     // This contract now has the funds requested.
-  //     // Your logic goes here.
-  //     //
-  //     require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
-
-      
-  //     // At the end of your logic above, this contract owes
-  //     // the flashloaned amounts + premiums.
-  //     // Therefore ensure your contract has enough to repay
-  //     // these amounts.
-      
-  //     // Approve the LendingPool contract allowance to *pull* the owed amount
-  //     for (uint i = 0; i < assets.length; i++) {
-  //         uint amountOwing = amounts[i].add(premiums[i]);
-  //         IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
-  //     }
-      
-  //     return true;
-  // }
-
-  function swapStablecoinDeposit() external override returns (bool) {
+  function swapStablecoinDeposit() external override {
     requestTUSDRatio();
     require(ratio > 10000, "The transaction terminated because the TUSD ratio is not bigger than 1");
-    emit Bool(true);
+    // emit Bool(true);
     return true;
   }
 
   function requestTUSDRatio() internal {
     ratio = 1210; //corresponds to 1.210
+  }
+
+  function random() internal returns (uint) {
+    uint randomnumber = uint(keccak256(abi.encodePacked(now, msg.sender, nonce))) % 900;
+    randomnumber = randomnumber + 101;
+    nonce++;
+    return randomnumber;
   }
 }

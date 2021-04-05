@@ -22,13 +22,13 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceiver, Ownable {
 
-  using SafeMath for uint256;
+  using SafeMath for uint;
   using Address for address;
 
   // Constant variables for Chainlink external adaptor
   bytes32 private constant jobID = "35e14dbd490f4e3b9fbe92b85b32d98a";
   address private constant oracle = 0xFC153f49E74711C3140CA06bFAcf42FfDC492A17;
-  uint256 private constant fee = 0.01 * 1 ether;
+  uint private constant fee = 0.01 * 1 ether;
 
   // These addresses are for Kovan
   address constant lendingPoolAddressesProviderAddr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
@@ -37,7 +37,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   address poolAddr;
   // ILendingPool pool;
 
-  uint256 ratio;
+  uint ratio;
   // address constant nodeAddr;
 
   // address private owner;
@@ -62,21 +62,21 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   }
 
   constructor() public {
-    setPublicChainlinkToken();
-    // owner = msg.sender;
-    protocolDataProvider = AaveProtocolDataProvider(aaveProtocolDataProviderAddr);
-    ADDRESSES_PROVIDER  = ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddr);
-    poolAddr = ADDRESSES_PROVIDER.getLendingPool();
-    LENDING_POOL = ILendingPool(poolAddr);
+    // setPublicChainlinkToken();
+    // // owner = msg.sender;
+    // protocolDataProvider = AaveProtocolDataProvider(aaveProtocolDataProviderAddr);
+    // ADDRESSES_PROVIDER  = ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddr);
+    // poolAddr = ADDRESSES_PROVIDER.getLendingPool();
+    // LENDING_POOL = ILendingPool(poolAddr);
 
-    // Constructing hashmaps
-    AaveProtocolDataProvider.TokenData[] memory allTokenData = protocolDataProvider.getAllATokens();
-    for (uint i = 0; i < allTokenData.length; i++) {
-      AaveProtocolDataProvider.TokenData memory token = allTokenData[i];
-      string memory tokenSym = token.symbol;
-      address addr = token.tokenAddress;
-      stableCoinAddresses[tokenSym] = addr;
-    }
+    // // Constructing hashmaps
+    // AaveProtocolDataProvider.TokenData[] memory allTokenData = protocolDataProvider.getAllATokens();
+    // for (uint i = 0; i < allTokenData.length; i++) {
+    //   AaveProtocolDataProvider.TokenData memory token = allTokenData[i];
+    //   string memory tokenSym = token.symbol;
+    //   address addr = token.tokenAddress;
+    //   stableCoinAddresses[tokenSym] = addr;
+    // }
     stablecoinList["TUSD"] = true;
     stablecoinList["USDC"] = true;
     stablecoinList["USDT"] = true;
@@ -84,7 +84,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     stablecoinList["BUSD"] = true;
   }
 
-  function deposit(uint256 amount, string memory tokenType, address sender) internal {
+  function deposit(uint amount, string memory tokenType, address sender) public {
     // String check
     require(stablecoinList[tokenType]);
     address token = stableCoinAddresses[tokenType];
@@ -94,13 +94,15 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     LENDING_POOL.deposit(token, amount, sender, 0);
   }
 
-  function createUser() external override returns (bool) {
-    require(userData[msg.sender].userAddress == address(0));
-    userData[msg.sender].userAddress = msg.sender;
-    userData[msg.sender].optInStatus = false;
-    userAddresses.push(msg.sender);
-    emit Bool(true);
-    return true;
+  function createUser() external override {
+    if (userData[msg.sender].userAddress == address(0)) {
+      userData[msg.sender].userAddress = msg.sender;
+      userData[msg.sender].optInStatus = false;
+      userAddresses.push(msg.sender);
+      emit CreateUser(true);
+    } else {
+      emit CreateUser(false);
+    }
   }
 
   function getAllUsers() internal view returns (address[] memory) {
@@ -125,9 +127,9 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     return (currentBalance,decimals);
   }
 
-  function _getHighestAPYStablecoinAlt() internal view returns (string memory, uint256) {
-    uint256 maxLiquidityRate = 0;
-    uint256 currentLiquidityRate;
+  function _getHighestAPYStablecoinAlt() internal view returns (string memory, uint) {
+    uint maxLiquidityRate = 0;
+    uint currentLiquidityRate;
     string memory tokenType = "TUSD";
     (,,,currentLiquidityRate,,,,,,) = protocolDataProvider.getReserveData(stableCoinAddresses["TUSD"]);
     maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
@@ -154,14 +156,13 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     return (tokenType, maxLiquidityRate);
   }
 
-  function max(uint256 a, uint256 b) private pure returns (uint256) {
+  function max(uint a, uint b) private pure returns (uint) {
     return a > b ? a : b;
   }
 
-  function optInToggle() external override returns (bool) {
+  function optInToggle() external override {
     userData[msg.sender].optInStatus = !userData[msg.sender].optInStatus;
-    emit Bool(userData[msg.sender].optInStatus);
-    return userData[msg.sender].optInStatus;
+    emit OptInToggle(userData[msg.sender].optInStatus);
   }
 
   /**
@@ -169,8 +170,8 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   */
   function executeOperation(
       address[] calldata assets,
-      uint256[] calldata amounts,
-      uint256[] calldata premiums,
+      uint[] calldata amounts,
+      uint[] calldata premiums,
       address initiator,
       bytes calldata params
   )
@@ -200,14 +201,12 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       return true;
   }
 
-  function swapStablecoinDeposit() external override returns (bool) {
+  function swapStablecoinDeposit() external override {
     requestTUSDRatio();
     require(ratio > 10000, "The transaction terminated because the TUSD ratio is not bigger than 1");
-    string memory tokenType;
-    uint256 liquidityRate;
-    (tokenType, liquidityRate) = _getHighestAPYStablecoinAlt();
+    (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
 
-    uint256[] memory modes = new uint256[](1);
+    uint[] memory modes = new uint[](1);
     modes[0] = 1;
 
     address[] memory assets = new address[](1);
@@ -215,18 +214,17 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   
     for(uint i; i < userAddresses.length; i++) {
       if (userData[userAddresses[i]].optInStatus) {
-        uint256[] memory amounts = new uint256[](1);
+        uint[] memory amounts = new uint[](1);
         (amounts[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
       
         address onBehalfOf = userAddresses[i];
         // Swap here?
         LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
-        deposit(amounts[0], tokenType, onBehalfOf);
+        this.deposit(amounts[0], tokenType, onBehalfOf);
       }
     }
 
-    emit Bool(true);
-    return true;
+    emit SwapStablecoinDeposit(true);
   }
 
   function requestTUSDRatio() internal {
@@ -234,7 +232,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     sendChainlinkRequestTo(oracle, req, fee);
   }
 
-  function getTUSDRatio(bytes32 _requestID, uint256 _ratio) public recordChainlinkFulfillment(_requestID) {
+  function getTUSDRatio(bytes32 _requestID, uint _ratio) public recordChainlinkFulfillment(_requestID) {
     ratio = _ratio;
   }
 

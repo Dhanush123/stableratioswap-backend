@@ -4,24 +4,26 @@ pragma experimental ABIEncoderV2;
 
 interface IStableRatioSwap {
     /**
-     * Emit a {Bool} event
+     * Emit a {CreateUser} event
      */
-    function createUser() external returns (bool);
+    function createUser() external;
 
     /**
      * Emit a {Deposit} event
      */
-    function getAllStablecoinDeposits() external returns (bool);
+    function getAllStablecoinDeposits() external;
 
     /**
-     * Emit a {Bool} event
+     * Emit a {OptInToggle} event
      */
-    function optInToggle() external returns (bool);
+    function optInToggle() external;
 
     /**
-     * Emit a {Bool} event
+     * Emit a {SwapStablecoinDeposit} event
      */
-    function swapStablecoinDeposit() external returns (bool);
+    function swapStablecoinDeposit() external;
+
+    function deposit(uint, string memory, address) external;
 
     event Deposit(
         uint tusd,
@@ -36,7 +38,15 @@ interface IStableRatioSwap {
         uint decimalsBusd
     );
 
-    event Bool(
-        bool _bool
+    event CreateUser(
+        bool createUserStatus
+    );
+
+    event OptInToggle(
+        bool optInStatus
+    );
+
+    event SwapStablecoinDeposit(
+        bool swapStatus
     );
 }
