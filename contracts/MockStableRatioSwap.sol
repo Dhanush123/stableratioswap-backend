@@ -35,6 +35,7 @@ contract MockStableRatioSwap is IStableRatioSwap {
   function deposit(uint amount, string memory tokenType, address sender) public override {
     // String check
     require(stablecoinList[tokenType]);
+    emit Deposit(true);
   }
 
   function createUser() external override {
@@ -53,12 +54,13 @@ contract MockStableRatioSwap is IStableRatioSwap {
   }
 
   function getAllStablecoinDeposits() external override {
+    require(userData[msg.sender].userAddress != address(0));  
     (uint tusd, uint decimalsTusd) = _getCurrentDepositData(msg.sender, "TUSD");
     (uint usdc, uint decimalsUsdc) = _getCurrentDepositData(msg.sender, "USDC");
     (uint usdt, uint decimalsUsdt) = _getCurrentDepositData(msg.sender, "USDT");
     (uint dai, uint decimalsDai) = _getCurrentDepositData(msg.sender, "DAI");
     (uint busd, uint decimalsBusd) = _getCurrentDepositData(msg.sender, "BUSD");
-    emit Deposit(tusd, decimalsTusd, usdc, decimalsUsdc, usdt, decimalsUsdt, dai, decimalsDai, busd, decimalsBusd);
+    emit AllDeposits(tusd, decimalsTusd, usdc, decimalsUsdc, usdt, decimalsUsdt, dai, decimalsDai, busd, decimalsBusd);
   }
 
   function _getCurrentDepositData(address userAddress, string memory tokenType) internal returns (uint, uint) {
@@ -86,7 +88,7 @@ contract MockStableRatioSwap is IStableRatioSwap {
   }
 
   function requestTUSDRatio() internal {
-    ratio = 1210; //corresponds to 1.210
+    ratio = 12345; //corresponds to 1.2345
   }
 
   function random() internal returns (uint) {

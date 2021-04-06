@@ -25,7 +25,7 @@ interface IStableRatioSwap {
 
     function deposit(uint, string memory, address) external;
 
-    event Deposit(
+    event AllDeposits(
         uint tusd,
         uint decimalsTusd,
         uint usdc,
@@ -36,6 +36,10 @@ interface IStableRatioSwap {
         uint decimalsDai,
         uint busd,
         uint decimalsBusd
+    );
+
+    event Deposit(
+        bool depositStatus
     );
 
     event CreateUser(

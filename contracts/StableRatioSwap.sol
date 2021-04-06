@@ -115,7 +115,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     (uint usdt, uint decimalsUsdt) = _getCurrentDepositData(msg.sender, "USDT");
     (uint dai, uint decimalsDai) = _getCurrentDepositData(msg.sender, "DAI");
     (uint busd, uint decimalsBusd) = _getCurrentDepositData(msg.sender, "BUSD");
-    emit Deposit(tusd, decimalsTusd, usdc, decimalsUsdc, usdt, decimalsUsdt, dai, decimalsDai, busd, decimalsBusd);
+    emit AllDeposits(tusd, decimalsTusd, usdc, decimalsUsdc, usdt, decimalsUsdt, dai, decimalsDai, busd, decimalsBusd);
   }
 
   function _getCurrentDepositData(address userAddress, string memory tokenType) internal view returns (uint, uint) {
