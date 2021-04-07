@@ -196,7 +196,10 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       // Your logic goes here.
       //
       require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
-
+      (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
+      uint amountOwing = amounts[0].add(premiums[0]);
+      IERC20(stableCoinAddresses[tokenType]).approve(address(LENDING_POOL), amountOwing);
+      LENDING_POOL.deposit(stableCoinAddresses[tokenType], amountOwing, address(this), 0);
       
       // At the end of your logic above, this contract owes
       // the flashloaned amounts + premiums.
@@ -205,43 +208,39 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       
       // Approve the LendingPool contract allowance to *pull* the owed amount
       for (uint i = 0; i < assets.length; i++) {
-          uint amountOwing = amounts[i].add(premiums[i]);
+          // uint amountOwing = amounts[i].add(premiums[i]);
           IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
-          LENDING_POOL.deposit(assets[i], amountOwing, address(LENDING_POOL), 0);
       }
       
       return true;
   }
 
-  function swapStablecoinDeposit() external override {
+  function swapStablecoinDeposit(bool force) external override {
     requestTUSDRatio();
-    if (ratio > 10000) {
-      (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
 
-      uint[] memory modes = new uint[](1);
-      modes[0] = 1;
+    uint[] memory modes = new uint[](1);
+    modes[0] = 1;
 
-      address[] memory assets = new address[](1);
-      assets[0] = stableCoinAddresses["TUSD"];
-  
-      for(uint i; i < userAddresses.length; i++) {
-        if (userData[userAddresses[i]].optInStatus) {
-          uint[] memory amounts = new uint[](1);
-          (amounts[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
-          if (amounts[0] == 0) {
-            emit SwapStablecoinDeposit(false, ratio);
-            continue;
-          }
+    address[] memory assets = new address[](1);
+    assets[0] = stableCoinAddresses["TUSD"];
+
+    for(uint i; i < userAddresses.length; i++) {
+      if (userData[userAddresses[i]].optInStatus) {
+        uint[] memory amounts = new uint[](1);
+        (amounts[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
+        if (amounts[0] == 0 && !force) {
+          emit SwapStablecoinDeposit(false, ratio);
+          continue;
+        }
+        if (ratio > 10000) {
           address onBehalfOf = userAddresses[i];
           LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
+          emit SwapStablecoinDeposit(true, ratio);
+        } else {
+          emit SwapStablecoinDeposit(false, ratio);
         }
       }
-
-      emit SwapStablecoinDeposit(true, ratio);
-    } else {
-      emit SwapStablecoinDeposit(false, ratio);
     }
-    
   }
 
   function requestTUSDRatio() internal {

@@ -81,7 +81,7 @@ contract MockStableRatioSwap is IStableRatioSwap {
     emit OptInToggle(userData[msg.sender].optInStatus);
   }
 
-  function swapStablecoinDeposit() external override {
+  function swapStablecoinDeposit(bool force) external override {
     requestTUSDRatio();
     require(ratio > 10000, "The transaction terminated because the TUSD ratio is not bigger than 1");
     emit SwapStablecoinDeposit(true, ratio);
