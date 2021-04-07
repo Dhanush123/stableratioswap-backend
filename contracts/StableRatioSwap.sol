@@ -31,16 +31,19 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   uint private constant fee = 0.01 * 1 ether;
 
   // These addresses are for Kovan
+  address private constant kovan_tusd = 0x016750AC630F711882812f24Dba6c95b9D35856d;
+  address private constant kovan_usdc = 0xe22da380ee6B445bb8273C81944ADEB6E8450422;
+  address private constant kovan_usdt = 0x13512979ADE267AB5100878E2e0f485B568328a4;
+  address private constant kovan_dai = 0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD;
+  address private constant kovan_busd = 0x4c6E1EFC12FDfD568186b7BAEc0A43fFfb4bCcCf;
   address constant lendingPoolAddressesProviderAddr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
   address constant aaveProtocolDataProviderAddr = 0x3c73A5E5785cAC854D468F727c606C07488a29D6;
   AaveProtocolDataProvider protocolDataProvider;
   address poolAddr;
-  // ILendingPool pool;
 
   uint ratio;
   // address constant nodeAddr;
 
-  // address private owner;
   address[] private userAddresses;
   mapping(address => User) private userData;
   mapping(string => address) stableCoinAddresses;
@@ -62,21 +65,28 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   }
 
   constructor() public {
-    // setPublicChainlinkToken();
-    // // owner = msg.sender;
-    // protocolDataProvider = AaveProtocolDataProvider(aaveProtocolDataProviderAddr);
-    // ADDRESSES_PROVIDER  = ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddr);
-    // poolAddr = ADDRESSES_PROVIDER.getLendingPool();
-    // LENDING_POOL = ILendingPool(poolAddr);
+    setPublicChainlinkToken();
+    protocolDataProvider = AaveProtocolDataProvider(aaveProtocolDataProviderAddr);
+    ADDRESSES_PROVIDER  = ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddr);
+    poolAddr = ADDRESSES_PROVIDER.getLendingPool();
+    LENDING_POOL = ILendingPool(poolAddr);
 
-    // // Constructing hashmaps
-    // AaveProtocolDataProvider.TokenData[] memory allTokenData = protocolDataProvider.getAllATokens();
-    // for (uint i = 0; i < allTokenData.length; i++) {
-    //   AaveProtocolDataProvider.TokenData memory token = allTokenData[i];
-    //   string memory tokenSym = token.symbol;
-    //   address addr = token.tokenAddress;
-    //   stableCoinAddresses[tokenSym] = addr;
-    // }
+    // Constructing hashmaps
+    /**
+    AaveProtocolDataProvider.TokenData[] memory allTokenData = protocolDataProvider.getAllATokens();
+    for (uint i = 0; i < allTokenData.length; i++) {
+      AaveProtocolDataProvider.TokenData memory token = allTokenData[i];
+      string memory tokenSym = token.symbol;
+      address addr = token.tokenAddress;
+      stableCoinAddresses[tokenSym] = addr;
+    }
+    */
+    stableCoinAddresses["TUSD"] = kovan_tusd;
+    stableCoinAddresses["USDC"] = kovan_usdc;
+    stableCoinAddresses["USDT"] = kovan_usdt;
+    stableCoinAddresses["DAI"] = kovan_dai;
+    stableCoinAddresses["BUSD"] = kovan_busd;
+
     stablecoinList["TUSD"] = true;
     stablecoinList["USDC"] = true;
     stablecoinList["USDT"] = true;
@@ -120,10 +130,12 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
 
   function _getCurrentDepositData(address userAddress, string memory tokenType) internal view returns (uint, uint) {
     // Helper for getAllStablecoinDeposits()
+    // Whether userAddress exists is handled by functions that call this function.
+    require(stablecoinList[tokenType]);
     address token = stableCoinAddresses[tokenType];
     (uint currentBalance,,,,,,,,) = protocolDataProvider.getUserReserveData(token, userAddress);
     (uint decimals,,,,,,,,,) = protocolDataProvider.getReserveConfigurationData(token);
-    return (currentBalance,decimals);
+    return (currentBalance, decimals);
   }
 
   function _getHighestAPYStablecoinAlt() internal view returns (string memory, uint) {
@@ -195,6 +207,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       for (uint i = 0; i < assets.length; i++) {
           uint amountOwing = amounts[i].add(premiums[i]);
           IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
+          LENDING_POOL.deposit(asset[i], amountOwing, address(LENDING_POOL), 0);
       }
       
       return true;
@@ -202,28 +215,33 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
 
   function swapStablecoinDeposit() external override {
     requestTUSDRatio();
-    require(ratio > 10000, "The transaction terminated because the TUSD ratio is not bigger than 1");
-    (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
+    if (ratio > 10000) {
+      (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
 
-    uint[] memory modes = new uint[](1);
-    modes[0] = 1;
+      uint[] memory modes = new uint[](1);
+      modes[0] = 1;
 
-    address[] memory assets = new address[](1);
-    assets[0] = stableCoinAddresses["TUSD"];
+      address[] memory assets = new address[](1);
+      assets[0] = stableCoinAddresses["TUSD"];
   
-    for(uint i; i < userAddresses.length; i++) {
-      if (userData[userAddresses[i]].optInStatus) {
-        uint[] memory amounts = new uint[](1);
-        (amounts[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
-      
-        address onBehalfOf = userAddresses[i];
-        // Swap here?
-        LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
-        this.deposit(amounts[0], tokenType, onBehalfOf);
+      for(uint i; i < userAddresses.length; i++) {
+        if (userData[userAddresses[i]].optInStatus) {
+          uint[] memory amounts = new uint[](1);
+          (amounts[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
+          if (amounts[0] == 0) {
+            emit SwapStablecoinDeposit(false, ratio);
+            continue;
+          }
+          address onBehalfOf = userAddresses[i];
+          LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
+        }
       }
-    }
 
-    emit SwapStablecoinDeposit(true);
+      emit SwapStablecoinDeposit(true, ratio);
+    } else {
+      emit SwapStablecoinDeposit(false, ratio);
+    }
+    
   }
 
   function requestTUSDRatio() internal {
