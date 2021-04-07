@@ -207,7 +207,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       for (uint i = 0; i < assets.length; i++) {
           uint amountOwing = amounts[i].add(premiums[i]);
           IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
-          LENDING_POOL.deposit(asset[i], amountOwing, address(LENDING_POOL), 0);
+          LENDING_POOL.deposit(assets[i], amountOwing, address(LENDING_POOL), 0);
       }
       
       return true;
