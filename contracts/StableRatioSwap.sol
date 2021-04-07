@@ -196,7 +196,10 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       // Your logic goes here.
       //
       require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
-
+      (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
+      int amountOwing = amounts[0].add(premiums[0]);
+      IERC20(stableCoinAddresses[tokenType]).approve(address(LENDING_POOL), amountOwing);
+      LENDING_POOL.deposit(stableCoinAddresses[tokenType], amountOwing, address(this), 0);
       
       // At the end of your logic above, this contract owes
       // the flashloaned amounts + premiums.
@@ -207,7 +210,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       for (uint i = 0; i < assets.length; i++) {
           uint amountOwing = amounts[i].add(premiums[i]);
           IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
-          LENDING_POOL.deposit(assets[i], amountOwing, address(this), 0);
       }
       
       return true;
@@ -215,7 +217,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
 
   function swapStablecoinDeposit(bool force) external override {
     requestTUSDRatio();
-    (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
 
     uint[] memory modes = new uint[](1);
     modes[0] = 1;
