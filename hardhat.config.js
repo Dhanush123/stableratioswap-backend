@@ -1,3 +1,4 @@
+import { HardhatUserConfig } from 'hardhat/config'
 require("@nomiclabs/hardhat-waffle");
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -22,7 +23,14 @@ module.exports = {
       {
         version: "0.6.12",
       }
-    ]
+    ],
+    settings: {
+      outputSelection: {
+        "*": {
+            "*": ["storageLayout"],
+        },
+      },
+    }
   },
   networks: {
     hardhat: {
