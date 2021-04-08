@@ -71,8 +71,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     poolAddr = ADDRESSES_PROVIDER.getLendingPool();
     LENDING_POOL = ILendingPool(poolAddr);
 
-    // Constructing hashmaps
-    /**
     AaveProtocolDataProvider.TokenData[] memory allTokenData = protocolDataProvider.getAllATokens();
     for (uint i = 0; i < allTokenData.length; i++) {
       AaveProtocolDataProvider.TokenData memory token = allTokenData[i];
@@ -80,7 +78,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       address addr = token.tokenAddress;
       stableCoinAddresses[tokenSym] = addr;
     }
-    */
+    
     stableCoinAddresses["TUSD"] = kovan_tusd;
     stableCoinAddresses["USDC"] = kovan_usdc;
     stableCoinAddresses["USDT"] = kovan_usdt;
@@ -252,6 +250,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     ratio = _ratio;
   }
 
-  // receive() external payable {}
+  receive() external payable {}
 
 }

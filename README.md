@@ -31,7 +31,7 @@ npm start
 ```
 
 Then, on a new terminal, go to the backend repository's root folder and run this to
-deploy your contract:
+deploy your contract locally:
 
 ```sh
 npx hardhat run scripts/deployreal.js --network localhost
@@ -41,3 +41,8 @@ or
 npx hardhat run scripts/deploymock.js --network localhost
 ```
 If you ever delete the ```/contracts``` folder in the frontend repo, you will need to run both of the above commands.
+
+Assuming you've put your credentials in a .env in the backend repository's root folder, run the following to deploy to Kovan:
+```sh
+npx hardhat run scripts/deployreal.js --network kovan
+```

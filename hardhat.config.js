@@ -1,5 +1,17 @@
-import { HardhatUserConfig } from 'hardhat/config'
 require("@nomiclabs/hardhat-waffle");
+// import { HardhatUserConfig } from 'hardhat/config';
+
+// Go to https://www.alchemyapi.io, sign up, create
+// a new App in its dashboard, and replace "KEY" with its key
+// TODO: get from env
+const ALCHEMY_API_KEY = "";
+
+// Replace this private key with your Kovan account private key
+// To export your private key from Metamask, open Metamask and
+// go to Account Details > Export Private Key
+// Be aware of NEVER putting real Ether into testing accounts
+// TODO: get from env
+const KOVAN_PRIVATE_KEY = "";
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -36,6 +48,10 @@ module.exports = {
     hardhat: {
       chainId: 31337
     },
+    kovan: {
+      url: `https://eth-kovan.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+      accounts: [`0x${KOVAN_PRIVATE_KEY}`]
+    }
   }
 };
 
