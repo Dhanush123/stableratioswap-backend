@@ -1,14 +1,11 @@
 const { expect } = require("chai");
 
-describe("Greeter", function() {
-  it("Should return the new greeting once it's changed", async function() {
-    const Greeter = await ethers.getContractFactory("Greeter");
-    const greeter = await Greeter.deploy("Hello, world!");
-    
-    await greeter.deployed();
-    expect(await greeter.greet()).to.equal("Hello, world!");
-
-    await greeter.setGreeting("Hola, mundo!");
-    expect(await greeter.greet()).to.equal("Hola, mundo!");
+describe("StableRatioSwap", function() {
+  it("optInStatus should be false if createUser is called once", async function() {
+    const StableRatioSwap = await ethers.getContractFactory("StableRatioSwap");
+    const stableRatioSwap = await StableRatioSwap.deploy();
+    await stableRatioSwap.deployed();
+    const CreateUser = await stableRatioSwap.createUser();
+    expect(await CreateUser.createUserStatus).to.equal(true);
   });
 });
