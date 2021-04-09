@@ -62,6 +62,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   struct User {
     address userAddress;
     bool optInStatus;
+    bool forceSwap;
   }
 
   constructor() public {
@@ -106,6 +107,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     if (userData[msg.sender].userAddress == address(0)) {
       userData[msg.sender].userAddress = msg.sender;
       userData[msg.sender].optInStatus = false;
+      userData[msg.sender].forceSwap = false;
       userAddresses.push(msg.sender);
       emit CreateUser(true);
     } else {
@@ -209,12 +211,22 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
           // uint amountOwing = amounts[i].add(premiums[i]);
           IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
       }
-      
+      emit SwapStablecoinDeposit(true, ratio);
       return true;
   }
 
   function swapStablecoinDeposit(bool force) external override {
+    userData[msg.sender].forceSwap = true;
     requestTUSDRatio();
+  }
+
+  function requestTUSDRatio() internal {
+    Chainlink.Request memory req = buildChainlinkRequest(jobID, address(this), this.getTUSDRatio.selector);
+    sendChainlinkRequestTo(oracle, req, fee);
+  }
+
+  function getTUSDRatio(bytes32 _requestID, uint _ratio) public recordChainlinkFulfillment(_requestID) {
+    ratio = _ratio;
 
     uint[] memory modes = new uint[](1);
     modes[0] = 1;
@@ -226,28 +238,18 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
       if (userData[userAddresses[i]].optInStatus) {
         uint[] memory amounts = new uint[](1);
         (amounts[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
-        if (amounts[0] == 0 && !force) {
+        if (amounts[0] == 0 || !userData[msg.sender].forceSwap) {
           emit SwapStablecoinDeposit(false, ratio);
           continue;
         }
-        if (ratio > 10000) {
+        if (ratio > 10000 || userData[msg.sender].forceSwap) {
           address onBehalfOf = userAddresses[i];
           LENDING_POOL.flashLoan(address(this), assets, amounts, modes, onBehalfOf, "", 0);
-          emit SwapStablecoinDeposit(true, ratio);
         } else {
           emit SwapStablecoinDeposit(false, ratio);
         }
       }
     }
-  }
-
-  function requestTUSDRatio() internal {
-    Chainlink.Request memory req = buildChainlinkRequest(jobID, address(this), this.getTUSDRatio.selector);
-    sendChainlinkRequestTo(oracle, req, fee);
-  }
-
-  function getTUSDRatio(bytes32 _requestID, uint _ratio) public recordChainlinkFulfillment(_requestID) {
-    ratio = _ratio;
   }
 
   receive() external payable {}
