@@ -3,21 +3,21 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./IStableRatioSwap.sol";
-import "./IUniswapV2Router02.sol";
+import "./UniswapV2Router02.sol";
 // import "./UniswapLiquiditySwapProvider.sol";
 
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
-import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
-import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
+// import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
+// import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
-import {IFlashLoanReceiver} from "@aave/protocol-v2/contracts/flashloan/interfaces/IFlashLoanReceiver.sol";
+// import {IFlashLoanReceiver} from "@aave/protocol-v2/contracts/flashloan/interfaces/IFlashLoanReceiver.sol";
 // import {UniswapliquiditySwapAdapter} from "@aave/protocol-v2/contracts/adapters/UniswapliquiditySwapAdapter.sol";
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+// import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+// import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceiver, Ownable {
@@ -44,7 +44,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
 
   uint ratio;
   uint flashedTUSDAmt;
-  address swappingUserAddress;
+  address flashedUserAddress;
   address latestTokenToSwapTo;
 
   address[] private userAddresses;
@@ -52,13 +52,13 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   mapping(string => address) stableCoinAddresses;
   mapping(string => bool) stablecoinList;
 
-  ILendingPoolAddressesProvider public override ADDRESSES_PROVIDER;
-  ILendingPool public override LENDING_POOL;
-
+  ILendingPoolAddressesProvider public ADDRESSES_PROVIDER;
+  ILendingPool public LENDING_POOL;
+  
   struct User {
     address userAddress;
     bool optInStatus;
-    // bool forceSwap;
+    bool forceSwap;
   }
 
   struct PermitSignature {
@@ -72,13 +72,13 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   // address constant uniswapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
   // IUniswapV2Router02 private uniswapRouter;
   address constant uniswapV2Router02Address = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-  IUniswapV2Router02 uniswapV2Router02;
+  UniswapV2Router02 uniswapV2Router02;
   // UniswapLiquiditySwapAdapter uniswapLiquiditySwapAdapter;
 
   constructor() public {
     setPublicChainlinkToken();
     protocolDataProvider = AaveProtocolDataProvider(aaveProtocolDataProviderAddr);
-    ADDRESSES_PROVIDER = ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddr);
+    ADDRESSES_PROVIDER  = ILendingPoolAddressesProvider(lendingPoolAddressesProviderAddr);
     poolAddr = ADDRESSES_PROVIDER.getLendingPool();
     LENDING_POOL = ILendingPool(poolAddr);
     
@@ -96,8 +96,17 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
 
     // uniswapRouter = IUniswapV2Router02(uniswapRouterAddress);
     // uniswapLiquiditySwapAdapter = UniswapLiquiditySwapAdapter(uniswapLiquiditySwapAdapterAddress);
-    // uniswapV2Router02 = UniswapV2Router02(uniswapV2Router02Address);
-    uniswapV2Router02 = IUniswapV2Router02(uniswapV2Router02Address);
+    uniswapV2Router02 = UniswapV2Router02(uniswapV2Router02Address);
+  }
+
+    function executeOperation(
+    address[] calldata assets,
+    uint256[] calldata amounts,
+    uint256[] calldata premiums,
+    address initiator,
+    bytes calldata params
+  ) override external returns (bool) {
+    return true;
   }
 
   function deposit(uint amount, string memory tokenType, address sender) public override {
@@ -113,7 +122,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     if (userData[msg.sender].userAddress == address(0)) {
       userData[msg.sender].userAddress = msg.sender;
       userData[msg.sender].optInStatus = true;
-      // userData[msg.sender].forceSwap = false;
+      userData[msg.sender].forceSwap = false;
       userAddresses.push(msg.sender);
       emit CreateUser(true);
     } else {
@@ -183,17 +192,16 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   }
 
   function swapStablecoinDeposit(bool force) external override {
-    // userData[msg.sender].forceSwap = true;
-    swappingUserAddress = msg.sender;
+    userData[msg.sender].forceSwap = true;
     emit SwapStablecoinDeposit(true, 1);
     coreSwapping();
     // requestTUSDRatio();
   }
 
-  function coreSwapping() internal {    
+  function coreSwapping() internal {
     // the amount to be flashed for each asset
     uint[] memory userAmount = new uint[](1);
-    (userAmount[0],) = _getCurrentDepositData(swappingUserAddress, "TUSD");
+    (userAmount[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
     emit SwapStablecoinDeposit(true, 2);
 
     (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
@@ -213,6 +221,8 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     // 0 = no debt, 1 = stable, 2 = variable
     uint[] memory modes = new uint[](1);
     modes[0] = 0;
+
+    swappingUserAddress = msg.sender;
 
     emit SwapStablecoinDeposit(false, 4);
     LENDING_POOL.flashLoan(
@@ -254,31 +264,26 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
         return true;
     }
     
-  function uniswapSwap(uint256 amountWantSwap) public payable {   
-    emit SwapStablecoinDeposit(true, 9);
-    require(IERC20(kovan_tusd).approve(address(uniswapV2Router02), amountWantSwap), 'approve failed.');
-    emit SwapStablecoinDeposit(true, 11);
-
+  function uniswapSwap(uint256 amount) public payable {   
+    if(IERC20(latestTokenToSwapTo).approve(address(uniswapV2Router02), amount)) {
+      emit SwapStablecoinDeposit(true, 9);
+    } else {
+      emit SwapStablecoinDeposit(false, 10);
+    }
+    
     address[] memory path = new address[](2);
     path[0] = kovan_tusd;
     path[1] = latestTokenToSwapTo;
-    emit SwapStablecoinDeposit(true, 12);
-    uint deadline = block.timestamp;
-    emit SwapStablecoinDeposit(true, 13);
-    address recipient = address(this);
+    uint deadline = block.timestamp + 15;
+    uint[] memory swappedAmount = uniswapRouter.swapExactTokensForTokens(amount,0, path, address(this), deadline);
+    emit SwapStablecoinDeposit(false, 11);
+    if (IERC20(latestTokenToSwapTo).approve(address(LENDING_POOL), swappedAmount[1])) {
+      emit SwapStablecoinDeposit(true, 12);
+    } else {
+      emit SwapStablecoinDeposit(false, 13);
+    }
+    LENDING_POOL.deposit(latestTokenToSwapTo, swappedAmount[1], swappingUserAddress, uint16(0));
     emit SwapStablecoinDeposit(true, 14);
-    uint amountMinSwap = amountWantSwap;
-    emit SwapStablecoinDeposit(true, 15);
-
-    // uint[] memory swappedAmount = uniswapV2Router02.swapExactTokensForTokens(amountWantSwap, amountMinSwap, path, recipient, deadline);
-    // emit SwapStablecoinDeposit(false, 11);
-
-    // require(IERC20(latestTokenToSwapTo).approve(address(LENDING_POOL), swappedAmount[1]));
-    // emit SwapStablecoinDeposit(false, 12);
-
-    // uint16 referralCode = 0;
-    // LENDING_POOL.deposit(latestTokenToSwapTo, swappedAmount[1], swappingUserAddress, referralCode);
-    // emit SwapStablecoinDeposit(true, 13);
   }
 
   // function coreSwapping() internal {
