@@ -193,21 +193,29 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
             uint amountOwing = amounts[i].add(premiums[i]);
             IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
         }
-        emit SwapStablecoinDeposit(true, ratio);
+        emit SwapStablecoinDeposit(true, 106);
         return true;
     }
 
   function uniswapSwap(uint256 amount) public payable {   
-    // address swapToTokenAddress = stableCoinAddresses[latestTokenToSwapTo];     
-    require(IERC20(latestTokenToSwapTo).approve(address(uniswapRouter), amount), 'uniswap approve failed.');
+    if(IERC20(latestTokenToSwapTo).approve(address(uniswapRouter), amount)) {
+      emit SwapStablecoinDeposit(true, 101);
+    } else {
+      emit SwapStablecoinDeposit(false, 102);
+    }
     
     address[] memory path = new address[](2);
     path[0] = kovan_tusd;
     path[1] = latestTokenToSwapTo;
     uint deadline = block.timestamp + 15;
     uint[] memory swappedAmount = uniswapRouter.swapExactTokensForTokens(amount,0, path, address(this), deadline);
-    require(IERC20(latestTokenToSwapTo).approve(address(LENDING_POOL), swappedAmount[1]), 'aave deposit approve failed');
+    if (IERC20(latestTokenToSwapTo).approve(address(LENDING_POOL), swappedAmount[1])) {
+      emit SwapStablecoinDeposit(true, 103);
+    } else {
+      emit SwapStablecoinDeposit(true, 104);
+    }
     LENDING_POOL.deposit(latestTokenToSwapTo, swappedAmount[1], swappingUserAddress, uint16(0));
+    emit SwapStablecoinDeposit(true, 105);
   }
 
   function swapStablecoinDeposit(bool force) external override {
@@ -232,12 +240,12 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
         uint[] memory userAmount = new uint[](1);
         (userAmount[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
 
-        if (userAmount[0] == 0) {
-          emit SwapStablecoinDeposit(false, ratio);
-          continue;
-        }
+        // if (userAmount[0] == 0) {
+        //   emit SwapStablecoinDeposit(false, ratio);
+        //   continue;
+        // }
 
-        if (ratio > 10000 || userData[msg.sender].forceSwap) {
+        // if (ratio > 10000 || userData[userAddresses[i]].forceSwap) {
           // address onBehalfOf = userAddresses[i];
           (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
           latestTokenToSwapTo = stableCoinAddresses[tokenType];
@@ -267,9 +275,9 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
               params,
               referralCode
           );
-        } else {
-          emit SwapStablecoinDeposit(false, ratio);
-        }
+        // } else {
+        //   emit SwapStablecoinDeposit(false, ratio);
+        // }
       }
     }
   }
