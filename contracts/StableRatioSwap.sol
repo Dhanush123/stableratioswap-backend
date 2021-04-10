@@ -12,15 +12,17 @@ import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
 import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
-// import {IFlashLoanReceiver} from "@aave/protocol-v2/contracts/flashloan/interfaces/IFlashLoanReceiver.sol";
+
 // import {UniswapliquiditySwapAdapter} from "@aave/protocol-v2/contracts/adapters/UniswapliquiditySwapAdapter.sol";
+import {IFlashLoanReceiver} from "@aave/protocol-v2/contracts/flashloan/interfaces/IFlashLoanReceiver.sol";
+import "./IUniswapV2Router02.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
+contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceiver, Ownable {
 
   using SafeMath for uint;
   using Address for address;
@@ -43,21 +45,25 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
 
   uint ratio;
   uint flashedTUSDAmt;
-  address flashedUserAddress;
+  address swappingUserAddress;
+  address latestTokenToSwapTo;
 
   address[] private userAddresses;
   mapping(address => User) private userData;
   mapping(string => address) stableCoinAddresses;
   mapping(string => bool) stablecoinList;
 
-  ILendingPoolAddressesProvider public ADDRESSES_PROVIDER;
-  ILendingPool public LENDING_POOL;
+  ILendingPoolAddressesProvider public override ADDRESSES_PROVIDER;
+  ILendingPool public override LENDING_POOL;
   
   struct User {
     address userAddress;
     bool optInStatus;
     bool forceSwap;
   }
+
+  address constant uniswapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+  IUniswapV2Router02 private uniswapRouter;
 
   constructor() public {
     setPublicChainlinkToken();
@@ -77,6 +83,8 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
     stablecoinList["USDT"] = true;
     stablecoinList["DAI"] = true;
     stablecoinList["BUSD"] = true;
+
+    uniswapRouter = IUniswapV2Router02(uniswapRouterAddress);
   }
 
   function deposit(uint amount, string memory tokenType, address sender) public override {
@@ -161,49 +169,46 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
     userData[msg.sender].optInStatus = !userData[msg.sender].optInStatus;
     emit OptInToggle(userData[msg.sender].optInStatus);
   }
-
+  
   /**
-    This function is called after your contract has received the flash loaned amount
+    This function is called after the contract has received the flash loaned amount
   */
-  /** 
   function executeOperation(
       address[] calldata assets,
-      uint[] calldata amounts,
-      uint[] calldata premiums,
+      uint256[] calldata amounts,
+      uint256[] calldata premiums,
       address initiator,
       bytes calldata params
-  )
+    )
       external
       override
       returns (bool)
-  {
+    {   
+        // do something
+        uint256 loanAmount = amounts[0];
+        uniswapSwap(loanAmount);
+        
+        // Approve the LendingPool contract allowance to *pull* the owed amount
+        for (uint i = 0; i < assets.length; i++) {
+            uint amountOwing = amounts[i].add(premiums[i]);
+            IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
+        }
+        emit SwapStablecoinDeposit(true, ratio);
+        return true;
+    }
 
-      //
-      // This contract now has the funds requested.
-      // Your logic goes here.
-      //
-      require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
-
-      (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
-      uint amountOwing = flashedTUSDAmt.add(premiums[0]);
-      LENDING_POOL.withdraw(kovan_tusd, flashedTUSDAmt, flashedUserAddress);
-      IERC20(stableCoinAddresses[tokenType]).approve(address(LENDING_POOL), amountOwing);
-      LENDING_POOL.deposit(stableCoinAddresses[tokenType], amountOwing, flashedUserAddress, uint16(0));
-      
-      // At the end of your logic above, this contract owes
-      // the flashloaned amounts + premiums.
-      // Therefore ensure your contract has enough to repay
-      // these amounts.
-      
-      // Approve the LendingPool contract allowance to *pull* the owed amount
-      for (uint i = 0; i < assets.length; i++) {
-          // uint amountOwing = amounts[i].add(premiums[i]);
-          IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
-      }
-      emit SwapStablecoinDeposit(true, ratio);
-      return true;
+  function uniswapSwap(uint256 amount) public payable {   
+    // address swapToTokenAddress = stableCoinAddresses[latestTokenToSwapTo];     
+    require(IERC20(latestTokenToSwapTo).approve(address(uniswapRouter), amount), 'uniswap approve failed.');
+    
+    address[] memory path = new address[](2);
+    path[0] = kovan_tusd;
+    path[1] = latestTokenToSwapTo;
+    uint deadline = block.timestamp + 15;
+    uint[] memory swappedAmount = uniswapRouter.swapExactTokensForTokens(amount,0, path, address(this), deadline);
+    require(IERC20(latestTokenToSwapTo).approve(address(LENDING_POOL), swappedAmount[1]), 'aave deposit approve failed');
+    LENDING_POOL.deposit(latestTokenToSwapTo, swappedAmount[1], swappingUserAddress, uint16(0));
   }
-  */
 
   function swapStablecoinDeposit(bool force) external override {
     userData[msg.sender].forceSwap = true;
@@ -217,22 +222,17 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
 
   function getTUSDRatio(bytes32 _requestID, uint _ratio) public recordChainlinkFulfillment(_requestID) {
     ratio = _ratio;
+    coreSwapping();
+  }
 
-    // 0 = no debt, 1 = stable, 2 = variable
-    uint[] memory modes = new uint[](1);
-    modes[0] = 0;
-
-    // the assets to be flashed
-    address[] memory assets = new address[](1);
-    assets[0] = stableCoinAddresses["TUSD"];
-
+  function coreSwapping() internal {
     for(uint i; i < userAddresses.length; i++) {
       if (userData[userAddresses[i]].optInStatus) {
         // the amount to be flashed for each asset
-        uint[] memory amounts = new uint[](1);
-        (amounts[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
+        uint[] memory userAmount = new uint[](1);
+        (userAmount[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
 
-        if (amounts[0] == 0) {
+        if (userAmount[0] == 0) {
           emit SwapStablecoinDeposit(false, ratio);
           continue;
         }
@@ -240,14 +240,33 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
         if (ratio > 10000 || userData[msg.sender].forceSwap) {
           // address onBehalfOf = userAddresses[i];
           (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
-          flashedTUSDAmt = amounts[0];
-          flashedUserAddress = userAddresses[i];
-          LENDING_POOL.withdraw(kovan_tusd, flashedTUSDAmt, flashedUserAddress);
-          IERC20(stableCoinAddresses[tokenType]).approve(address(LENDING_POOL), flashedTUSDAmt);
-          LENDING_POOL.deposit(stableCoinAddresses[tokenType], flashedTUSDAmt, flashedUserAddress, uint16(0));
+          latestTokenToSwapTo = stableCoinAddresses[tokenType];
 
-          // LENDING_POOL.flashLoan(address(this), assets, amounts, modes, address(this), "", 0);
-          emit SwapStablecoinDeposit(true, ratio);
+          address receiverAddress = address(this);
+          address[] memory assets = new address[](1);
+          assets[0] = stableCoinAddresses["TUSD"];
+
+          address onBehalfOf = address(this);
+
+          bytes memory params = "";
+          uint16 referralCode = 0;
+          uint256[] memory amounts = new uint256[](1);
+          amounts[0] = userAmount[0];
+          // 0 = no debt, 1 = stable, 2 = variable
+          uint[] memory modes = new uint[](1);
+          modes[0] = 0;
+
+          swappingUserAddress = userAddresses[i];
+
+          LENDING_POOL.flashLoan(
+              receiverAddress,
+              assets,
+              amounts,
+              modes,
+              onBehalfOf,
+              params,
+              referralCode
+          );
         } else {
           emit SwapStablecoinDeposit(false, ratio);
         }
