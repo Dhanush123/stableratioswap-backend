@@ -1,9 +1,10 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity >0.6.8;
+pragma solidity >=0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "./IStableRatioSwap.sol";
-import "./UniswapLiquiditySwapProvider.sol";
+import "./UniswapV2Router02.sol";
+// import "./UniswapLiquiditySwapProvider.sol";
 
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
@@ -70,8 +71,9 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
 
   // address constant uniswapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
   // IUniswapV2Router02 private uniswapRouter;
-  address constant uniswapLiquiditySwapAdapterAddress = 0xe89019F746692dE440244C8ECB9A2ACB46C2AC7D;
-  UniswapLiquiditySwapAdapter uniswapLiquiditySwapAdapter;
+  address constant uniswapV2Router02Address = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+  UniswapV2Router02 uniswapV2Router02;
+  // UniswapLiquiditySwapAdapter uniswapLiquiditySwapAdapter;
 
   constructor() public {
     setPublicChainlinkToken();
@@ -93,7 +95,8 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     stablecoinList["BUSD"] = true;
 
     // uniswapRouter = IUniswapV2Router02(uniswapRouterAddress);
-    uniswapLiquiditySwapAdapter = UniswapLiquiditySwapAdapter(uniswapLiquiditySwapAdapterAddress);
+    // uniswapLiquiditySwapAdapter = UniswapLiquiditySwapAdapter(uniswapLiquiditySwapAdapterAddress);
+    uniswapV2Router02 = UniswapV2Router02(uniswapV2Router02Address);
   }
 
     function executeOperation(
@@ -112,7 +115,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     // address token = stableCoinAddresses[tokenType];
     // // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
     // require(IERC20(token).approve(poolAddr, amount));
-    
     // LENDING_POOL.deposit(token, amount, sender, 0);
   }
 
@@ -188,6 +190,143 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
     userData[msg.sender].optInStatus = !userData[msg.sender].optInStatus;
     emit OptInToggle(userData[msg.sender].optInStatus);
   }
+
+  function swapStablecoinDeposit(bool force) external override {
+    userData[msg.sender].forceSwap = true;
+    emit SwapStablecoinDeposit(true, 1);
+    coreSwapping();
+    // requestTUSDRatio();
+  }
+
+  function coreSwapping() internal {
+    // the amount to be flashed for each asset
+    uint[] memory userAmount = new uint[](1);
+    (userAmount[0],) = _getCurrentDepositData(userAddresses[i], "TUSD");
+    emit SwapStablecoinDeposit(true, 2);
+
+    (string memory tokenType, uint liquidityRate) = _getHighestAPYStablecoinAlt();
+    latestTokenToSwapTo = stableCoinAddresses[tokenType];
+    emit SwapStablecoinDeposit(true, 3);
+
+    address receiverAddress = address(this);
+    address[] memory assets = new address[](1);
+    assets[0] = stableCoinAddresses["TUSD"];
+
+    address onBehalfOf = address(this);
+
+    bytes memory params = "";
+    uint16 referralCode = 0;
+    uint256[] memory amounts = new uint256[](1);
+    amounts[0] = userAmount[0];
+    // 0 = no debt, 1 = stable, 2 = variable
+    uint[] memory modes = new uint[](1);
+    modes[0] = 0;
+
+    swappingUserAddress = msg.sender;
+
+    emit SwapStablecoinDeposit(false, 4);
+    LENDING_POOL.flashLoan(
+        receiverAddress,
+        assets,
+        amounts,
+        modes,
+        onBehalfOf,
+        params,
+        referralCode
+    );
+    emit SwapStablecoinDeposit(false, 5);
+  }
+
+    function executeOperation(
+      address[] calldata assets,
+      uint256[] calldata amounts,
+      uint256[] calldata premiums,
+      address initiator,
+      bytes calldata params
+    )
+      external
+      override
+      returns (bool)
+    {   
+        // do something
+        uint256 loanAmount = amounts[0];
+        emit SwapStablecoinDeposit(true, 6);
+        uniswapSwap(loanAmount-premiums[0]);
+        emit SwapStablecoinDeposit(true, 7);
+
+        // Approve the LendingPool contract allowance to *pull* the owed amount
+        for (uint i = 0; i < assets.length; i++) {
+          uint amountOwing = amounts[i].add(premiums[i]);
+          IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
+        }
+        
+        emit SwapStablecoinDeposit(true, 8);
+        return true;
+    }
+    
+  function uniswapSwap(uint256 amount) public payable {   
+    if(IERC20(latestTokenToSwapTo).approve(address(uniswapV2Router02), amount)) {
+      emit SwapStablecoinDeposit(true, 9);
+    } else {
+      emit SwapStablecoinDeposit(false, 10);
+    }
+    
+    address[] memory path = new address[](2);
+    path[0] = kovan_tusd;
+    path[1] = latestTokenToSwapTo;
+    uint deadline = block.timestamp + 15;
+    uint[] memory swappedAmount = uniswapRouter.swapExactTokensForTokens(amount,0, path, address(this), deadline);
+    emit SwapStablecoinDeposit(false, 11);
+    if (IERC20(latestTokenToSwapTo).approve(address(LENDING_POOL), swappedAmount[1])) {
+      emit SwapStablecoinDeposit(true, 12);
+    } else {
+      emit SwapStablecoinDeposit(false, 13);
+    }
+    LENDING_POOL.deposit(latestTokenToSwapTo, swappedAmount[1], swappingUserAddress, uint16(0));
+    emit SwapStablecoinDeposit(true, 14);
+  }
+
+  // function coreSwapping() internal {
+  //   // use uniswap to swap current deposit
+  //   address[] memory path = new address[](2);
+  //   path[0] = kovan_tusd;
+  //   path[1] = latestTokenToSwapTo;
+  //   uint deadline = block.timestamp + 15;
+  //   if(IERC20(latestTokenToSwapTo).approve(address(uniswapRouter), amount)) {
+  //     emit SwapStablecoinDeposit(true, 1);
+  //   } else {
+  //     emit SwapStablecoinDeposit(false, 2);
+  //   }
+  //   uint[] memory swappedAmount = uniswapRouter.swapExactTokensForTokens(amount,0, path, address(this), deadline);
+
+  //   // use Aave to deposit
+  //   emit SwapStablecoinDeposit(false, 98);
+  //   address[] memory assetToSwapFromList = new address[](1);
+  //   assetToSwapFromList[0] = stableCoinAddresses["TUSD"];
+  //   (string memory tokenType,) = _getHighestAPYStablecoinAlt();
+  //   latestTokenToSwapTo = stableCoinAddresses[tokenType];
+  //   address[] memory assetToSwapToList = new address[](1);
+  //   assetToSwapToList[0] = latestTokenToSwapTo;
+  //   uint[] memory amountToSwapList = new uint[](1);
+  //   emit SwapStablecoinDeposit(false, 99);
+  //   (amountToSwapList[0],) = _getCurrentDepositData(msg.sender, "TUSD");
+  //   uint[] memory minAmountsToReceive = new uint[](1);
+  //   minAmountsToReceive[0] = 0;
+  //   uint8[] memory v = new uint8[](1);
+  //   v[0] = 0;
+  //   emit SwapStablecoinDeposit(false, 101);
+  //   (uint userAmount,) = _getCurrentDepositData(msg.sender, "TUSD");
+  //   uint deadline = block.timestamp + 15;
+  //   emit SwapStablecoinDeposit(false, 102);
+  //   BaseUniswapAdapter.PermitSignature[] memory permitParams = new BaseUniswapAdapter.PermitSignature[](1);
+  //   permitParams[0] = BaseUniswapAdapter.PermitSignature(userAmount,deadline,0,0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000000000000000000000000000);
+  //   emit SwapStablecoinDeposit(false, 103);
+
+  //   require(IERC20(assetToSwapFromList[0]).approve(poolAddr, amountToSwapList[0]));
+  //   emit SwapStablecoinDeposit(false, 104);
+  //   uniswapLiquiditySwapAdapter.swapAndDeposit(assetToSwapFromList, assetToSwapToList, amountToSwapList, minAmountsToReceive, permitParams);
+  //   emit SwapStablecoinDeposit(true, 105);
+  // }
   
   // /**
   //   This function is called after the contract has received the flash loaned amount
@@ -216,33 +355,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   //       return true;
   //   }
 
-  // function uniswapSwap(uint256 amount) public payable {   
-  //   if(IERC20(latestTokenToSwapTo).approve(address(uniswapRouter), amount)) {
-  //     emit SwapStablecoinDeposit(true, 101);
-  //   } else {
-  //     emit SwapStablecoinDeposit(false, 102);
-  //   }
-    
-  //   address[] memory path = new address[](2);
-  //   path[0] = kovan_tusd;
-  //   path[1] = latestTokenToSwapTo;
-  //   uint deadline = block.timestamp + 15;
-  //   uint[] memory swappedAmount = uniswapRouter.swapExactTokensForTokens(amount,0, path, address(this), deadline);
-  //   if (IERC20(latestTokenToSwapTo).approve(address(LENDING_POOL), swappedAmount[1])) {
-  //     emit SwapStablecoinDeposit(true, 103);
-  //   } else {
-  //     emit SwapStablecoinDeposit(false, 104);
-  //   }
-  //   LENDING_POOL.deposit(latestTokenToSwapTo, swappedAmount[1], swappingUserAddress, uint16(0));
-  //   emit SwapStablecoinDeposit(true, 105);
-  // }
-
-  function swapStablecoinDeposit(bool force) external override {
-    userData[msg.sender].forceSwap = true;
-    coreSwapping();
-    // requestTUSDRatio();
-  }
-
   // function requestTUSDRatio() internal {
   //   Chainlink.Request memory req = buildChainlinkRequest(jobID, address(this), this.getTUSDRatio.selector);
   //   sendChainlinkRequestTo(oracle, req, fee);
@@ -252,35 +364,6 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceive
   //   ratio = _ratio;
   //   coreSwapping();
   // }
-
-  function coreSwapping() internal {
-    emit SwapStablecoinDeposit(false, 98);
-    address[] memory assetToSwapFromList = new address[](1);
-    assetToSwapFromList[0] = stableCoinAddresses["TUSD"];
-    (string memory tokenType,) = _getHighestAPYStablecoinAlt();
-    latestTokenToSwapTo = stableCoinAddresses[tokenType];
-    address[] memory assetToSwapToList = new address[](1);
-    assetToSwapToList[0] = latestTokenToSwapTo;
-    uint[] memory amountToSwapList = new uint[](1);
-    emit SwapStablecoinDeposit(false, 99);
-    (amountToSwapList[0],) = _getCurrentDepositData(msg.sender, "TUSD");
-    uint[] memory minAmountsToReceive = new uint[](1);
-    minAmountsToReceive[0] = 0;
-    uint8[] memory v = new uint8[](1);
-    v[0] = 0;
-    emit SwapStablecoinDeposit(false, 101);
-    (uint userAmount,) = _getCurrentDepositData(msg.sender, "TUSD");
-    uint deadline = block.timestamp + 15;
-    emit SwapStablecoinDeposit(false, 102);
-    BaseUniswapAdapter.PermitSignature[] memory permitParams = new BaseUniswapAdapter.PermitSignature[](1);
-    permitParams[0] = BaseUniswapAdapter.PermitSignature(userAmount,deadline,0,0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000000000000000000000000000);
-    emit SwapStablecoinDeposit(false, 103);
-
-    require(IERC20(assetToSwapFromList[0]).approve(poolAddr, amountToSwapList[0]));
-    emit SwapStablecoinDeposit(false, 104);
-    uniswapLiquiditySwapAdapter.swapAndDeposit(assetToSwapFromList, assetToSwapToList, amountToSwapList, minAmountsToReceive, permitParams);
-    emit SwapStablecoinDeposit(true, 105);
-  }
 
   // function coreSwapping() internal {
   //   // for(uint i; i < userAddresses.length; i++) {

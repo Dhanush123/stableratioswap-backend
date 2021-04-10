@@ -35,14 +35,40 @@ module.exports = {
       },
       {
         version: "0.6.12"
+      },
+      {
+        version: "0.5.0"
+      },
+      {
+        version: "0.6.6"
       }
     ],
     settings: {
       outputSelection: {
         "*": {
-            "*": ["storageLayout"],
-        },
+          "*": [
+            "storageLayout",
+            "evm.bytecode.object",
+            "evm.deployedBytecode.object",
+            "abi",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.sourceMap",
+            "metadata"
+          ],
+          "": ["ast"]
+        }
       },
+      // outputSelection: {
+      //   "*": {
+      //       "*": ["storageLayout"],
+      //   },
+      // },
+    },
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 999999
+      }
     }
   },
   networks: {
