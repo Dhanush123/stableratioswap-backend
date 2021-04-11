@@ -23,7 +23,7 @@ interface IStableRatioSwap {
      */
     function swapStablecoinDeposit(bool force) external;
 
-    function deposit(uint, string memory, address) external;
+    // function deposit(uint, string memory, address) external;
 
     event AllDeposits(
         uint tusd,

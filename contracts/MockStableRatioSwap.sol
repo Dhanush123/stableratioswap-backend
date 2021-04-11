@@ -32,11 +32,11 @@ contract MockStableRatioSwap is IStableRatioSwap {
     stablecoinList["BUSD"] = true;
   }
 
-  function deposit(uint amount, string memory tokenType, address sender) public override {
-    // String check
-    require(stablecoinList[tokenType]);
-    emit Deposit(true);
-  }
+  // function deposit(uint amount, string memory tokenType, address sender) public override {
+  //   // String check
+  //   require(stablecoinList[tokenType]);
+  //   emit Deposit(true);
+  // }
 
   function createUser() external override {
     if (userData[msg.sender].userAddress == address(0)) {
