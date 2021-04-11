@@ -76,7 +76,8 @@ module.exports = {
       chainId: 31337
     },
     kovan: {
-      url: `https://eth-kovan.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+      // url: `https://eth-kovan.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+      url: `https://kovan.infura.io/v3/${process.env.REACT_APP_KOVAN_INFURA_KEY}`,
       accounts: [`0x${KOVAN_PRIVATE_KEY}`]
     }
   }

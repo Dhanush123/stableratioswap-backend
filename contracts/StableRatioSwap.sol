@@ -4,20 +4,20 @@ pragma experimental ABIEncoderV2;
 
 import "./IStableRatioSwap.sol";
 // import "./IUniswapV2Router02.sol";
-import "./UniswapLiquiditySwapProvider.sol";
+// import "./UniswapLiquiditySwapProvider.sol";
 
 import "@chainlink/contracts/src/v0.6/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
-// import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
-// import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
+import {ILendingPool} from "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
+import {ILendingPoolAddressesProvider} from "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
 import {AaveProtocolDataProvider} from "@aave/protocol-v2/contracts/misc/AaveProtocolDataProvider.sol";
 // import {IFlashLoanReceiver} from "@aave/protocol-v2/contracts/flashloan/interfaces/IFlashLoanReceiver.sol";
-// import {UniswapliquiditySwapAdapter} from "@aave/protocol-v2/contracts/adapters/UniswapliquiditySwapAdapter.sol";
+// import {UniswapLiquiditySwapAdapter} from "@aave/protocol-v2/contracts/adapters/UniswapLiquiditySwapAdapter.sol";
 
-// import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-// import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, IFlashLoanReceiver, Ownable {
@@ -37,9 +37,10 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
   address private constant kovan_usdt = 0x13512979ADE267AB5100878E2e0f485B568328a4;
   address private constant kovan_dai = 0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD;
   address private constant kovan_busd = 0x4c6E1EFC12FDfD568186b7BAEc0A43fFfb4bCcCf;
+  address private constant kovan_weth = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
   address constant lendingPoolAddressesProviderAddr = 0x88757f2f99175387aB4C6a4b3067c77A695b0349;
   address constant aaveProtocolDataProviderAddr = 0x3c73A5E5785cAC854D468F727c606C07488a29D6;
-  address constant uniswapLiquiditySwapAdapterAddress = 0xe89019F746692dE440244C8ECB9A2ACB46C2AC7D;
+  address constant uniswapLiquiditySwapAdapterAddress = 0xC18451d36aA370fDACe8d45839bF975F48f7AEa1;
   AaveProtocolDataProvider protocolDataProvider;
   address poolAddr;
 
@@ -75,7 +76,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
   // IUniswapV2Router02 private uniswapRouter;
   // address constant uniswapV2Router02Address = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
   // IUniswapV2Router02 uniswapV2Router02;
-  UniswapLiquiditySwapAdapter uniswapLiquiditySwapAdapter;
+  // UniswapLiquiditySwapAdapter uniswapLiquiditySwapAdapter;
 
   constructor() public {
     setPublicChainlinkToken();
@@ -97,7 +98,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
     stablecoinList["BUSD"] = true;
 
     // uniswapRouter = IUniswapV2Router02(uniswapRouterAddress);
-    uniswapLiquiditySwapAdapter = UniswapLiquiditySwapAdapter(uniswapLiquiditySwapAdapterAddress);
+    // uniswapLiquiditySwapAdapter = UniswapLiquiditySwapAdapter(uniswapLiquiditySwapAdapterAddress);
     // uniswapV2Router02 = UniswapV2Router02(uniswapV2Router02Address);
     // uniswapV2Router02 = IUniswapV2Router02(uniswapV2Router02Address);
     // deadline = block.timestamp+150;
@@ -147,9 +148,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
   function _getHighestAPYStablecoinAlt() internal view returns (string memory, uint) {
     uint maxLiquidityRate = 0;
     uint currentLiquidityRate;
-    string memory tokenType = "TUSD";
-    (,,,currentLiquidityRate,,,,,,) = protocolDataProvider.getReserveData(stableCoinAddresses["TUSD"]);
-    maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
+    string memory tokenType;
     (,,,currentLiquidityRate,,,,,,) = protocolDataProvider.getReserveData(stableCoinAddresses["USDC"]);
     maxLiquidityRate = max(maxLiquidityRate, currentLiquidityRate);
     if (maxLiquidityRate == currentLiquidityRate) {
@@ -184,7 +183,7 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
 
   function swapStablecoinDeposit(bool force) external override {
     swappingUserAddress = msg.sender; 
-    userData[swappingUserAddress].forceSwap = true;
+    userData[swappingUserAddress].forceSwap = force;
     requestTUSDRatio();
   }
 
@@ -200,25 +199,22 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
 
   function coreSwapping() public {
     (uint userAmount, uint decimals) = _getCurrentDepositData(swappingUserAddress, "TUSD");
-    (string memory tokenType,) = _getHighestAPYStablecoinAlt();
-    address swapToTokenAddress = stableCoinAddresses[tokenType];
-    if (ratio > 10000 || userData[swappingUserAddress].forceSwap == true) {
-      emit SwapStablecoinDeposit(true, ratio, swapToTokenAddress, userAmount, decimals);
-    } else {
-      emit SwapStablecoinDeposit(false, ratio, swapToTokenAddress, 0, 0);
-    }
+    (string memory swapToTokenName,) = _getHighestAPYStablecoinAlt();
+    address swapToTokenAddress = stableCoinAddresses[swapToTokenName];
+    bool meetCondition = ratio > 10000 || userData[swappingUserAddress].forceSwap == true;
+    emit SwapStablecoinDeposit(meetCondition, ratio, userAmount, decimals, swapToTokenAddress, swapToTokenName);
   }
 
   receive() external payable {}
   
   // function coreSwapping() internal {
-  //   emit SwapStablecoinDeposit(false, 2);
+  //   // emit SwapStablecoinDeposit(false, 2);
   //   address[] memory assetToSwapFromList = new address[](1);
-  //   assetToSwapFromList[0] = stableCoinAddresses["TUSD"];
+  //   assetToSwapFromList[0] = kovan_weth; //stableCoinAddresses["TUSD"];
 
   //   (string memory tokenType,) = _getHighestAPYStablecoinAlt();
   //   latestTokenToSwapTo = stableCoinAddresses[tokenType];
-  //   emit SwapStablecoinDeposit(false, 3);
+  //   // emit SwapStablecoinDeposit(false, 3);
 
   //   address[] memory assetToSwapToList = new address[](1);
   //   assetToSwapToList[0] = latestTokenToSwapTo;
@@ -227,26 +223,25 @@ contract StableRatioSwap is IStableRatioSwap, ChainlinkClient, Ownable {
   //   minAmountsToReceive[0] = 0;
 
   //   uint userAmount;
-  //   (userAmount,) = _getCurrentDepositData(swappingUserAddress, "TUSD");
+  //   (userAmount,) = _getCurrentDepositData(swappingUserAddress, "WETH");
   //   // uint deadline = block.timestamp + 100;
   //   uint amountToSwap = userAmount/uint(2);
-  //   emit SwapStablecoinDeposit(false, 4);
+  //   // emit SwapStablecoinDeposit(false, 4);
 
   //   BaseUniswapAdapter.PermitSignature[] memory permitParams = new BaseUniswapAdapter.PermitSignature[](1);
   //   permitParams[0] = BaseUniswapAdapter.PermitSignature(userAmount,deadline,0,0x0000000000000000000000000000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000000000000000000000000000);
-  //   emit SwapStablecoinDeposit(false, 5);
+  //   // emit SwapStablecoinDeposit(false, 5);
 
   //   uint[] memory amountToSwapList = new uint[](1);
   //   amountToSwapList[0] = amountToSwap;
   //   // require(IERC20(assetToSwapFromList[0]).approve(poolAddr, amountToSwapList[0]));
-  //   emit SwapStablecoinDeposit(false, 6);
+  //   // emit SwapStablecoinDeposit(false, 6);
   //   IERC20(assetToSwapFromList[0]).allowance(swappingUserAddress,uniswapLiquiditySwapAdapterAddress);
-  //   emit SwapStablecoinDeposit(false, 7);
+  //   // emit SwapStablecoinDeposit(false, 7);
   //   uniswapLiquiditySwapAdapter.swapAndDeposit(assetToSwapFromList, assetToSwapToList, amountToSwapList, minAmountsToReceive, permitParams);
-  //   emit SwapStablecoinDeposit(true, 8);
+  //   emit SwapStablecoinDeposit(true, ratio, address(this), 0, 0);
   // }
   
-
     // function executeOperation(
     //   address[] calldata assets,
     //   uint256[] calldata amounts,

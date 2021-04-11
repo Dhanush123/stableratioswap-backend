@@ -53,8 +53,9 @@ interface IStableRatioSwap {
     event SwapStablecoinDeposit(
         bool swapStatus,
         uint ratio,
-        address swapToTokenAddress,
         uint userAmount,
-        uint decimals
+        uint decimals,
+        address swapToTokenAddress,
+        string swapToTokenName
     );
 }
