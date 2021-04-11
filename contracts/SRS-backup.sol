@@ -102,11 +102,11 @@
 //     deadline = block.timestamp+150;
 //   }
 
-//   function deposit(uint amount, address tokenAddress, address sender) internal {
-//     // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
-//     require(IERC20(tokenAddress).approve(poolAddr, amount));
-//     LENDING_POOL.deposit(token, amount, sender, 0);
-//   }
+//   // function deposit(uint amount, address tokenAddress, address sender) internal {
+//   //   // Check if the LendingPool contract have at least an allowance() of amount for the asset being deposited
+//   //   require(IERC20(tokenAddress).approve(poolAddr, amount));
+//   //   LENDING_POOL.deposit(token, amount, sender, 0);
+//   // }
 
 //   function createUser() external override {
 //     if (userData[msg.sender].userAddress == address(0)) {
@@ -226,56 +226,56 @@
 //     emit SwapStablecoinDeposit(false, 5);
 //   }
 
-//     function executeOperation(
-//       address[] calldata assets,
-//       uint256[] calldata amounts,
-//       uint256[] calldata premiums,
-//       address initiator,
-//       bytes calldata params
-//     )
-//       external
-//       override
-//       returns (bool)
-//     {   
-//         // 1) Aave gives SRS TUSD
-//         uint256 loanAmount = amounts[0];
-//         emit SwapStablecoinDeposit(true, 6);
-//         uniswapSwap(loanAmount);
-//         emit SwapStablecoinDeposit(true, 7);
+//     // function executeOperation(
+//     //   address[] calldata assets,
+//     //   uint256[] calldata amounts,
+//     //   uint256[] calldata premiums,
+//     //   address initiator,
+//     //   bytes calldata params
+//     // )
+//     //   external
+//     //   override
+//     //   returns (bool)
+//     // {   
+//     //     // 1) Aave gives SRS TUSD
+//     //     uint256 loanAmount = amounts[0];
+//     //     emit SwapStablecoinDeposit(true, 6);
+//     //     uniswapSwap(loanAmount);
+//     //     emit SwapStablecoinDeposit(true, 7);
 
-//         // 4) SRS repays Aave TUSD + fee
-//         for (uint i = 0; i < assets.length; i++) {
-//           uint amountOwing = amounts[i].add(premiums[i]);
-//           // Approve SRS to pull amountOwing
-//           IERC20(assets[i]).approve(address(this), amountOwing);
-//           // move amountOwing from Aave to SRS
-//           LENDING_POOL.withdraw(assets[i],amountOwing,address(this));
-//           // Approve the LendingPool contract allowance to *pull* the owed amount from SRS
-//           IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
-//         }
-//         emit SwapStablecoinDeposit(true, 8);
-//         return true;
-//     }
+//     //     // 4) SRS repays Aave TUSD + fee
+//     //     for (uint i = 0; i < assets.length; i++) {
+//     //       uint amountOwing = amounts[i].add(premiums[i]);
+//     //       // Approve SRS to pull amountOwing
+//     //       IERC20(assets[i]).approve(address(this), amountOwing);
+//     //       // move amountOwing from Aave to SRS
+//     //       LENDING_POOL.withdraw(assets[i],amountOwing,address(this));
+//     //       // Approve the LendingPool contract allowance to *pull* the owed amount from SRS
+//     //       IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
+//     //     }
+//     //     emit SwapStablecoinDeposit(true, 8);
+//     //     return true;
+//     // }
     
-//   function uniswapSwap(uint256 amountWantSwap) public payable {   
-//     emit SwapStablecoinDeposit(true, 9);
-//     uint amountOut = amountWantSwap;
-//     uint amountInMax = amountWantSwap;
-//     require(IERC20(kovan_tusd).approve(address(uniswapV2Router02), amountInMax, 'approve failed.'));
-//     emit SwapStablecoinDeposit(true, 11);
+//   // function uniswapSwap(uint256 amountWantSwap) public payable {   
+//   //   emit SwapStablecoinDeposit(true, 9);
+//   //   uint amountOut = amountWantSwap;
+//   //   uint amountInMax = amountWantSwap;
+//   //   require(IERC20(kovan_tusd).approve(address(uniswapV2Router02), amountInMax, 'approve failed.'));
+//   //   emit SwapStablecoinDeposit(true, 11);
 
-//     address[] memory path = new address[](2);
-//     path[0] = kovan_tusd;
-//     path[1] = latestTokenToSwapTo;
-//     emit SwapStablecoinDeposit(true, 12);
-//     address recipient = address(this);
-//     emit SwapStablecoinDeposit(true, 13);
-//     // 2) Uniswap swap TUSD -> other coin (OC) and returns OC to SRS
-//     uint[] memory swappedAmount = uniswapV2Router02.swapTokensForExactTokens(amountOut, amountInMax, path, recipient, deadline);
-//     emit SwapStablecoinDeposit(false, 14);
-//     // 3) SRS deposits OC to Aave on user's behalf
-//     deposit(swappedAmount[1],latestTokenToSwapTo,swappingUserAddress);
-//   }
+//   //   address[] memory path = new address[](2);
+//   //   path[0] = kovan_tusd;
+//   //   path[1] = latestTokenToSwapTo;
+//   //   emit SwapStablecoinDeposit(true, 12);
+//   //   address recipient = address(this);
+//   //   emit SwapStablecoinDeposit(true, 13);
+//   //   // 2) Uniswap swap TUSD -> other coin (OC) and returns OC to SRS
+//   //   uint[] memory swappedAmount = uniswapV2Router02.swapTokensForExactTokens(amountOut, amountInMax, path, recipient, deadline);
+//   //   emit SwapStablecoinDeposit(false, 14);
+//   //   // 3) SRS deposits OC to Aave on user's behalf
+//   //   deposit(swappedAmount[1],latestTokenToSwapTo,swappingUserAddress);
+//   // }
 
 //   receive() external payable {}
 
