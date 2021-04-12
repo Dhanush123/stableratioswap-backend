@@ -46,3 +46,7 @@ Assuming you've put your credentials in a .env in the backend repository's root 
 ```sh
 npx hardhat run scripts/deployreal.js --network kovan
 ```
+To use the frontend with Kovan, stop running the web app locally if you started it and instead run:
+```
+npm run-script deploy
+```
