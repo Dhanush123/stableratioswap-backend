@@ -1,6 +1,9 @@
 # stableratioswap-backend
 
-Other related repos https://github.com/Dhanush123/stableratioswap-frontend https://github.com/Dhanush123/tusd-ratio-adapter https://github.com/Dhanush123/tusd-ratio-jobspec
+Other related repos
+* https://github.com/Dhanush123/stableratioswap-frontend
+* https://github.com/Dhanush123/tusd-ratio-adapter
+* https://github.com/Dhanush123/tusd-ratio-jobspec
 
 Link to the deployed frontend https://dhanush123.github.io/stableratioswap-frontend/
 
